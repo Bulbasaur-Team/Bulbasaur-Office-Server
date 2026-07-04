@@ -1,0 +1,31 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/bulba}
+    username: ${SPRING_DATASOURCE_USERNAME:bulba}
+    password: ${SPRING_DATASOURCE_PASSWORD:bulba}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  liquibase:
+    change-log: classpath:/db/changelog/db.changelog-master.yaml
+
+app:
+  jwt:
+    secret: ${APP_JWT_SECRET:change-me-in-production-please-use-a-long-random-value}
+    ttl: ${APP_JWT_TTL:P7D}
+  cors:
+    origin: ${APP_CORS_ORIGIN:http://localhost:5173}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

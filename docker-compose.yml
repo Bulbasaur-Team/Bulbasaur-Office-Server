@@ -1,0 +1,32 @@
+# Локальный запуск всего стека для проверки: docker compose up --build
+# (на VPS используется отдельный compose из инфра-гайда, который тянет готовый
+#  образ из GHCR и добавляет Caddy).
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bulba
+      POSTGRES_USER: bulba
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-bulba}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/bulba
+      SPRING_DATASOURCE_USERNAME: bulba
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-bulba}
+      APP_JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me-please-at-least-32-chars}
+      APP_CORS_ORIGIN: ${APP_CORS_ORIGIN:-http://localhost:5173}
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata:

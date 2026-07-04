@@ -1,0 +1,51 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2-create-leaderboard
+      author: bulba
+      changes:
+        - createTable:
+            tableName: leaderboard
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: player_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_leaderboard_player
+                    references: players(id)
+                    deleteCascade: true
+              - column:
+                  name: game
+                  type: varchar(40)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: value
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: leaderboard
+            columnNames: player_id, game
+            constraintName: uq_leaderboard_player_game
+        - createIndex:
+            tableName: leaderboard
+            indexName: idx_leaderboard_game_value
+            columns:
+              - column:
+                  name: game
+              - column:
+                  name: value
