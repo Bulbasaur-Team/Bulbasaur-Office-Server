@@ -3,7 +3,7 @@ server:
 
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/bulba}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5499/bulba}
     username: ${SPRING_DATASOURCE_USERNAME:bulba}
     password: ${SPRING_DATASOURCE_PASSWORD:bulba}
   jpa:
