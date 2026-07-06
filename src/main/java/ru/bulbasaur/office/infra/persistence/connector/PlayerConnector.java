@@ -2,6 +2,7 @@ package ru.bulbasaur.office.infra.persistence.connector;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import ru.bulbasaur.office.domain.model.Player;
 import ru.bulbasaur.office.infra.persistence.entity.PlayerEntity;
 import ru.bulbasaur.office.infra.persistence.mapper.PlayerPersistenceMapper;
@@ -38,5 +39,11 @@ public class PlayerConnector implements PlayerRepositoryPort {
     @Override
     public Optional<StoredPlayer> findByLogin(String login) {
         return repository.findByLogin(login).map(mapper::toStoredPlayer);
+    }
+
+    @Override
+    @Transactional
+    public void deleteById(UUID id) {
+        repository.deleteAccount(id);
     }
 }

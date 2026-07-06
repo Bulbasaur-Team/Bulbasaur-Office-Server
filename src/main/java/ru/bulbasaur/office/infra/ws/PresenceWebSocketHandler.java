@@ -53,8 +53,8 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
             case "join" -> onJoin(session, jsonMapper.treeToValue(node, JoinMessage.class));
             case "move" -> onMove(session, jsonMapper.treeToValue(node, MoveMessage.class));
             case "room" -> onRoom(session, jsonMapper.treeToValue(node, RoomMessage.class));
-            case "chat" -> onChat(session, jsonMapper.treeToValue(node, ChatMessage.class));
-            default -> log.debug("неизвестный тип WS-сообщения: {}", type);
+            // "chat" — чат временно отключён: сообщения не обрабатываются и не рассылаются.
+            default -> log.debug("неизвестный/отключённый тип WS-сообщения: {}", type);
         }
     }
 
