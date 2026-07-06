@@ -9,9 +9,12 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import ru.bulbasaur.office.domain.model.Emote;
 import ru.bulbasaur.office.domain.model.Role;
 import ru.bulbasaur.office.infra.ws.dto.ChatMessage;
 import ru.bulbasaur.office.infra.ws.dto.ChatOut;
+import ru.bulbasaur.office.infra.ws.dto.EmoteMessage;
+import ru.bulbasaur.office.infra.ws.dto.EmoteOut;
 import ru.bulbasaur.office.infra.ws.dto.JoinMessage;
 import ru.bulbasaur.office.infra.ws.dto.JoinedOut;
 import ru.bulbasaur.office.infra.ws.dto.LeftOut;
@@ -53,6 +56,7 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
             case "join" -> onJoin(session, jsonMapper.treeToValue(node, JoinMessage.class));
             case "move" -> onMove(session, jsonMapper.treeToValue(node, MoveMessage.class));
             case "room" -> onRoom(session, jsonMapper.treeToValue(node, RoomMessage.class));
+            case "emote" -> onEmote(session, jsonMapper.treeToValue(node, EmoteMessage.class));
             // "chat" — чат временно отключён: сообщения не обрабатываются и не рассылаются.
             default -> log.debug("неизвестный/отключённый тип WS-сообщения: {}", type);
         }
@@ -103,6 +107,19 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
         }
         broadcast(state.locationId(), session.getId(),
                 ChatOut.of(session.getId(), state.login(), msg.text()));
+    }
+
+    private void onEmote(WebSocketSession session, EmoteMessage msg) {
+        PresenceState state = registry.get(session.getId());
+        if (state == null || !state.isPlaced()) {
+            return;
+        }
+        Emote emote = Emote.fromName(msg.emote()).orElse(null);
+        if (emote == null) {
+            log.debug("неизвестная реакция: {}", msg.emote());
+            return;
+        }
+        broadcast(state.locationId(), session.getId(), EmoteOut.of(session.getId(), emote.name()));
     }
 
     private void sendSnapshot(WebSocketSession session, String locationId) {
