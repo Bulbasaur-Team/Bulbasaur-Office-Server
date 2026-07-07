@@ -10,8 +10,11 @@ import java.util.UUID;
 
 public interface LeaderboardRepositoryPort {
 
-    /** Сохранить результат, оставив лучший по правилу direction (одна строка на игрока/игру). */
-    void submit(UUID playerId, GameId game, long value, Direction direction);
+    /**
+     * Сохранить результат (одна строка на игрока/игру). accumulate=false — оставить лучший
+     * по правилу direction; accumulate=true — прибавить value к текущему значению.
+     */
+    void submit(UUID playerId, GameId game, long value, Direction direction, boolean accumulate);
 
     /** Топ результатов игры, отсортированный по direction, не более limit строк. */
     List<LeaderboardRow> top(GameId game, Direction direction, int limit);

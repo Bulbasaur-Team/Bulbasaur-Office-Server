@@ -24,8 +24,12 @@ public class LeaderBordConnector implements LeaderboardRepositoryPort {
 
     @Override
     @Transactional
-    public void submit(UUID playerId, GameId game, long value, Direction direction) {
-        repository.upsertBest(playerId, game.name(), value, direction == Direction.HIGHER_BETTER);
+    public void submit(UUID playerId, GameId game, long value, Direction direction, boolean accumulate) {
+        if (accumulate) {
+            repository.upsertAdd(playerId, game.name(), value);
+        } else {
+            repository.upsertBest(playerId, game.name(), value, direction == Direction.HIGHER_BETTER);
+        }
     }
 
     @Override

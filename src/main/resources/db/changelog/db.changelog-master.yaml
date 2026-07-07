@@ -5,3 +5,6 @@ databaseChangeLog:
   - include:
       file: changes/002-create-leaderboard.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/003-create-wotd-progress.yaml
+      relativeToChangelogFile: true

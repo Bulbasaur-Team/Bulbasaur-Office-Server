@@ -1,0 +1,71 @@
+databaseChangeLog:
+  - changeSet:
+      id: 3-create-wotd-progress
+      author: bulba
+      changes:
+        - createTable:
+            tableName: wotd_progress
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: player_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_wotd_progress_player
+                    references: players(id)
+                    deleteCascade: true
+              - column:
+                  name: game
+                  type: varchar(40)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: day
+                  type: date
+                  constraints:
+                    nullable: false
+              - column:
+                  name: solved
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: attempts
+                  type: int
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: guesses
+                  type: text
+                  defaultValue: ''
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: wotd_progress
+            columnNames: player_id, game, day
+            constraintName: uq_wotd_progress_player_game_day
+        - createIndex:
+            tableName: wotd_progress
+            indexName: idx_wotd_progress_game_day_attempts
+            columns:
+              - column:
+                  name: game
+              - column:
+                  name: day
+              - column:
+                  name: attempts

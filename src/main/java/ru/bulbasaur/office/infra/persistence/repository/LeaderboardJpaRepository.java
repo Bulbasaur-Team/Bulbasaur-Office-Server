@@ -32,6 +32,18 @@ public interface LeaderboardJpaRepository extends JpaRepository<LeaderboardEntry
                     @Param("value") long value,
                     @Param("higherBetter") boolean higherBetter);
 
+    /** Накопительно: при конфликте прибавляет value к текущему значению (для wordle). */
+    @Modifying
+    @Query(value = """
+            insert into leaderboard (player_id, game, value, updated_at)
+            values (:playerId, :game, :value, now())
+            on conflict (player_id, game) do update
+                set value = leaderboard.value + excluded.value, updated_at = excluded.updated_at
+            """, nativeQuery = true)
+    void upsertAdd(@Param("playerId") UUID playerId,
+                   @Param("game") String game,
+                   @Param("value") long value);
+
     @Query("""
             select p.login as login, p.id as playerId, l.value as value
             from LeaderboardEntryEntity l

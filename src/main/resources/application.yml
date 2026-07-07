@@ -23,6 +23,9 @@ app:
     ttl: ${APP_JWT_TTL:P7D}
   cors:
     origin: ${APP_CORS_ORIGIN:http://localhost:5173}
+  wotd:
+    secret: ${APP_WOTD_SECRET:change-me-wotd-secret-please-use-a-long-random-value}
+    launch-date: ${APP_WOTD_LAUNCH_DATE:2026-07-07}
 
 management:
   endpoints:

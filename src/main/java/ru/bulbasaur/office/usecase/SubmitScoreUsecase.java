@@ -17,7 +17,7 @@ public class SubmitScoreUsecase {
     private final GetLeaderboardUsecase getLeaderboard;
 
     public LeaderboardView execute(UUID playerId, String login, GameId game, long value, int limit) {
-        leaderboard.submit(playerId, game, value, game.direction());
+        leaderboard.submit(playerId, game, value, game.direction(), game.accumulate());
         return getLeaderboard.execute(game, playerId, login, limit);
     }
 }

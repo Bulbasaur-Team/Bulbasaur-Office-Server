@@ -7,19 +7,27 @@ import java.util.Optional;
  * оперирует строковым {@code code}, в БД результат хранится по имени enum.
  */
 public enum GameId {
-    BULBA_JUMP("bulbajump", Direction.HIGHER_BETTER),      // очки
-    BULBA_PACKER("bulbapacker", Direction.HIGHER_BETTER),  // очки
-    BULBA_RACING("bulbaracing", Direction.HIGHER_BETTER),  // очки
-    BULBA_PARKING("bulbaparking", Direction.LOWER_BETTER), // время
-    BULBA_GUESS("bulbaguess", Direction.LOWER_BETTER),     // меньше попыток
-    BULBA_WORDLE("bulbawordle", Direction.HIGHER_BETTER);  // больше угаданных слов
+    BULBA_JUMP("bulbajump", Direction.HIGHER_BETTER),          // очки, лучший
+    BULBA_PACKER("bulbapacker", Direction.HIGHER_BETTER),      // очки, лучший
+    BULBA_RACING("bulbaracing", Direction.HIGHER_BETTER),      // очки, лучший
+    BULBA_PARKING("bulbaparking", Direction.LOWER_BETTER),     // время, лучший
+    BULBA_GUESS("bulbaguess", Direction.LOWER_BETTER),         // меньше попыток, лучший
+    BULBA_WORDLE("bulbawordle", Direction.HIGHER_BETTER, true); // всего угаданных слов — накопительно
 
     private final String code;
     private final Direction direction;
+    // true — результаты накапливаются (складываются), а не заменяются лучшим.
+    // Направление при этом задаёт только сортировку/ранг.
+    private final boolean accumulate;
 
     GameId(String code, Direction direction) {
+        this(code, direction, false);
+    }
+
+    GameId(String code, Direction direction, boolean accumulate) {
         this.code = code;
         this.direction = direction;
+        this.accumulate = accumulate;
     }
 
     public String code() {
@@ -28,6 +36,10 @@ public enum GameId {
 
     public Direction direction() {
         return direction;
+    }
+
+    public boolean accumulate() {
+        return accumulate;
     }
 
     public static Optional<GameId> fromCode(String code) {
