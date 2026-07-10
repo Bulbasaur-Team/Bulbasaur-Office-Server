@@ -15,6 +15,12 @@ import ru.bulbasaur.office.infra.ws.dto.ChatMessage;
 import ru.bulbasaur.office.infra.ws.dto.ChatOut;
 import ru.bulbasaur.office.infra.ws.dto.EmoteMessage;
 import ru.bulbasaur.office.infra.ws.dto.EmoteOut;
+import ru.bulbasaur.office.infra.ws.dto.ItemKickMessage;
+import ru.bulbasaur.office.infra.ws.dto.ItemKickedOut;
+import ru.bulbasaur.office.infra.ws.dto.ItemMoveMessage;
+import ru.bulbasaur.office.infra.ws.dto.ItemMovedOut;
+import ru.bulbasaur.office.infra.ws.dto.ItemStateDto;
+import ru.bulbasaur.office.infra.ws.dto.ItemsOut;
 import ru.bulbasaur.office.infra.ws.dto.JoinMessage;
 import ru.bulbasaur.office.infra.ws.dto.JoinedOut;
 import ru.bulbasaur.office.infra.ws.dto.LeftOut;
@@ -39,6 +45,7 @@ import java.util.UUID;
 public class PresenceWebSocketHandler extends TextWebSocketHandler {
 
     private final PresenceRegistry registry;
+    private final ItemRegistry itemRegistry;
     private final JsonMapper jsonMapper;
 
     @Override
@@ -57,6 +64,8 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
             case "move" -> onMove(session, jsonMapper.treeToValue(node, MoveMessage.class));
             case "room" -> onRoom(session, jsonMapper.treeToValue(node, RoomMessage.class));
             case "emote" -> onEmote(session, jsonMapper.treeToValue(node, EmoteMessage.class));
+            case "itemKick" -> onItemKick(session, jsonMapper.treeToValue(node, ItemKickMessage.class));
+            case "itemMove" -> onItemMove(session, jsonMapper.treeToValue(node, ItemMoveMessage.class));
             // "chat" — чат временно отключён: сообщения не обрабатываются и не рассылаются.
             default -> log.debug("неизвестный/отключённый тип WS-сообщения: {}", type);
         }
@@ -122,11 +131,51 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
         broadcast(state.locationId(), session.getId(), EmoteOut.of(session.getId(), emote.name()));
     }
 
+    /**
+     * Удар по предмету. Конкурентные удары разруливает {@link ItemState#tryKick}:
+     * победивший рассылается всей комнате, включая ударившего (это его подтверждение),
+     * проигравший молча отбрасывается — его клиент скорректируется по чужому itemKicked.
+     */
+    private void onItemKick(WebSocketSession session, ItemKickMessage msg) {
+        PresenceState state = registry.get(session.getId());
+        if (state == null || !state.isPlaced()) {
+            return;
+        }
+        boolean accepted = itemRegistry.tryKick(
+                state.locationId(), msg.itemId(), session.getId(),
+                msg.x(), msg.y(), msg.vx(), msg.vy());
+        if (accepted) {
+            ItemKickedOut out = ItemKickedOut.of(
+                    msg.itemId(), msg.kickId(), msg.x(), msg.y(), msg.vx(), msg.vy());
+            send(session, out);
+            broadcast(state.locationId(), session.getId(), out);
+        }
+    }
+
+    /** Репорт позиции предмета: применяем и рассылаем, только если он от владельца. */
+    private void onItemMove(WebSocketSession session, ItemMoveMessage msg) {
+        PresenceState state = registry.get(session.getId());
+        if (state == null || !state.isPlaced()) {
+            return;
+        }
+        boolean accepted = itemRegistry.move(
+                state.locationId(), msg.itemId(), session.getId(),
+                msg.x(), msg.y(), msg.vx(), msg.vy());
+        if (accepted) {
+            broadcast(state.locationId(), session.getId(),
+                    ItemMovedOut.of(msg.itemId(), msg.x(), msg.y(), msg.vx(), msg.vy()));
+        }
+    }
+
     private void sendSnapshot(WebSocketSession session, String locationId) {
         List<PlayerState> others = registry.othersInRoom(locationId, session.getId()).stream()
                 .map(this::stateOf)
                 .toList();
         send(session, SnapshotOut.of(others));
+        List<ItemStateDto> items = itemRegistry.snapshot(locationId);
+        if (!items.isEmpty()) {
+            send(session, ItemsOut.of(items));
+        }
     }
 
     private void broadcast(String locationId, String exceptSessionId, Object payload) {
