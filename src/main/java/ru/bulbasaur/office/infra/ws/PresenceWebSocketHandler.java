@@ -27,8 +27,18 @@ import ru.bulbasaur.office.infra.ws.dto.LeftOut;
 import ru.bulbasaur.office.infra.ws.dto.MoveMessage;
 import ru.bulbasaur.office.infra.ws.dto.MovedOut;
 import ru.bulbasaur.office.infra.ws.dto.PlayerState;
+import ru.bulbasaur.office.infra.ws.dto.PokerClosedOut;
+import ru.bulbasaur.office.infra.ws.dto.PokerCreateMessage;
+import ru.bulbasaur.office.infra.ws.dto.PokerErrorOut;
+import ru.bulbasaur.office.infra.ws.dto.PokerJoinMessage;
+import ru.bulbasaur.office.infra.ws.dto.PokerRoomsOut;
+import ru.bulbasaur.office.infra.ws.dto.PokerTaskMessage;
+import ru.bulbasaur.office.infra.ws.dto.PokerVoteMessage;
 import ru.bulbasaur.office.infra.ws.dto.RoomMessage;
 import ru.bulbasaur.office.infra.ws.dto.SnapshotOut;
+import ru.bulbasaur.office.usecase.RecordPokerVotingUsecase;
+import ru.bulbasaur.office.usecase.dto.PokerVotingResult;
+import ru.bulbasaur.office.usecase.dto.RecordPokerVotingCommand;
 
 import java.io.IOException;
 import java.util.List;
@@ -46,6 +56,8 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
 
     private final PresenceRegistry registry;
     private final ItemRegistry itemRegistry;
+    private final PokerRegistry pokerRegistry;
+    private final RecordPokerVotingUsecase recordPokerVoting;
     private final JsonMapper jsonMapper;
 
     @Override
@@ -66,6 +78,14 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
             case "emote" -> onEmote(session, jsonMapper.treeToValue(node, EmoteMessage.class));
             case "itemKick" -> onItemKick(session, jsonMapper.treeToValue(node, ItemKickMessage.class));
             case "itemMove" -> onItemMove(session, jsonMapper.treeToValue(node, ItemMoveMessage.class));
+            case "pokerList" -> onPokerList(session);
+            case "pokerCreate" -> onPokerCreate(session, jsonMapper.treeToValue(node, PokerCreateMessage.class));
+            case "pokerJoin" -> onPokerJoin(session, jsonMapper.treeToValue(node, PokerJoinMessage.class));
+            case "pokerLeave" -> onPokerLeave(session);
+            case "pokerAddTask" -> onPokerAddTask(session, jsonMapper.treeToValue(node, PokerTaskMessage.class));
+            case "pokerVote" -> onPokerVote(session, jsonMapper.treeToValue(node, PokerVoteMessage.class));
+            case "pokerFinish" -> onPokerFinish(session);
+            case "pokerClose" -> onPokerClose(session);
             // "chat" — чат временно отключён: сообщения не обрабатываются и не рассылаются.
             default -> log.debug("неизвестный/отключённый тип WS-сообщения: {}", type);
         }
@@ -76,6 +96,12 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
         PresenceState removed = registry.remove(session.getId());
         if (removed != null && removed.isPlaced()) {
             broadcast(removed.locationId(), session.getId(), LeftOut.of(session.getId()));
+        }
+        if (removed != null) {
+            PokerRoom room = pokerRegistry.roomOf(removed.playerId());
+            if (room != null && room.leave(removed.playerId())) {
+                broadcastPokerState(room);
+            }
         }
     }
 
@@ -164,6 +190,150 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
         if (accepted) {
             broadcast(state.locationId(), session.getId(),
                     ItemMovedOut.of(msg.itemId(), msg.x(), msg.y(), msg.vx(), msg.vy()));
+        }
+    }
+
+    private void onPokerList(WebSocketSession session) {
+        send(session, roomsOut());
+    }
+
+    private void onPokerCreate(WebSocketSession session, PokerCreateMessage msg) {
+        PresenceState state = registry.get(session.getId());
+        if (state == null || !state.isPlaced()) {
+            return;
+        }
+        String name = msg.name() == null ? "" : msg.name().strip();
+        if (name.isEmpty()) {
+            name = "Planning Poker";
+        }
+        if (name.length() > 60) {
+            name = name.substring(0, 60);
+        }
+        PokerRoom room = pokerRegistry.create(name, state.playerId(), state.login());
+        if (room == null) {
+            send(session, PokerErrorOut.of("Слишком много активных комнат, попробуйте позже."));
+            return;
+        }
+        room.join(state.playerId(), state.login(), state.role().name(), session);
+        send(session, room.stateFor(state.playerId(), System.currentTimeMillis()));
+    }
+
+    private void onPokerJoin(WebSocketSession session, PokerJoinMessage msg) {
+        PresenceState state = registry.get(session.getId());
+        if (state == null || !state.isPlaced()) {
+            return;
+        }
+        PokerRoom room = pokerRegistry.get(msg.roomId());
+        if (room == null) {
+            send(session, PokerErrorOut.of("Комната уже закрыта."));
+            send(session, roomsOut());
+            return;
+        }
+        if (!room.join(state.playerId(), state.login(), state.role().name(), session)) {
+            send(session, PokerErrorOut.of("Комната переполнена."));
+            return;
+        }
+        broadcastPokerState(room);
+    }
+
+    private void onPokerLeave(WebSocketSession session) {
+        PresenceState state = registry.get(session.getId());
+        if (state == null) {
+            return;
+        }
+        PokerRoom room = pokerRegistry.roomOf(state.playerId());
+        if (room != null && room.leave(state.playerId())) {
+            broadcastPokerState(room);
+        }
+    }
+
+    private void onPokerAddTask(WebSocketSession session, PokerTaskMessage msg) {
+        PokerRoom room = pokerRoomOf(session);
+        PresenceState state = registry.get(session.getId());
+        if (room == null || state == null || msg.title() == null || msg.title().isBlank()) {
+            return;
+        }
+        String title = msg.title().strip();
+        if (title.length() > 200) {
+            title = title.substring(0, 200);
+        }
+        if (room.addTask(state.playerId(), title)) {
+            broadcastPokerState(room);
+        }
+    }
+
+    private void onPokerVote(WebSocketSession session, PokerVoteMessage msg) {
+        PokerRoom room = pokerRoomOf(session);
+        PresenceState state = registry.get(session.getId());
+        if (room == null || state == null) {
+            return;
+        }
+        if (room.vote(state.playerId(), msg.value())) {
+            broadcastPokerState(room);
+        }
+    }
+
+    /**
+     * Вскрытие карт: голоса замораживаются, usecase считает среднюю с рекомендацией
+     * и сохраняет результат в БД. Если сохранение упало, карты всё равно вскрыты —
+     * комната покажет голоса без средней.
+     */
+    private void onPokerFinish(WebSocketSession session) {
+        PokerRoom room = pokerRoomOf(session);
+        PresenceState state = registry.get(session.getId());
+        if (room == null || state == null) {
+            return;
+        }
+        PokerRoom.FinishedVoting finished = room.finish(state.playerId());
+        if (finished == null) {
+            return;
+        }
+        try {
+            PokerVotingResult result = recordPokerVoting.execute(
+                    new RecordPokerVotingCommand(room.name(), finished.title(), finished.votes()));
+            room.setResult(result.average(), result.recommended());
+        } catch (Exception e) {
+            log.error("не удалось сохранить результат покера для комнаты {}", room.id(), e);
+        }
+        broadcastPokerState(room);
+    }
+
+    private void onPokerClose(WebSocketSession session) {
+        PokerRoom room = pokerRoomOf(session);
+        PresenceState state = registry.get(session.getId());
+        if (room == null || state == null || !room.isAdmin(state.playerId())) {
+            return;
+        }
+        pokerRegistry.remove(room.id());
+        for (PokerRoom.Participant participant : room.participantsSnapshot()) {
+            send(participant.session(), PokerClosedOut.of(room.id()));
+        }
+    }
+
+    /** Комната игрока; null с уведомлением pokerClosed, если её уже нет (истёк TTL). */
+    private PokerRoom pokerRoomOf(WebSocketSession session) {
+        PresenceState state = registry.get(session.getId());
+        if (state == null) {
+            return null;
+        }
+        PokerRoom room = pokerRegistry.roomOf(state.playerId());
+        if (room == null) {
+            send(session, PokerClosedOut.of(null));
+        }
+        return room;
+    }
+
+    private PokerRoomsOut roomsOut() {
+        List<PokerRoomsOut.Room> rooms = pokerRegistry.active().stream()
+                .map(r -> new PokerRoomsOut.Room(r.id(), r.name(), r.adminLogin(), r.participantCount()))
+                .toList();
+        return PokerRoomsOut.of(rooms);
+    }
+
+    private void broadcastPokerState(PokerRoom room) {
+        long now = System.currentTimeMillis();
+        for (PokerRoom.Participant participant : room.participantsSnapshot()) {
+            send(participant.session(), room.stateFor(participant.playerId(), now));
         }
     }
 

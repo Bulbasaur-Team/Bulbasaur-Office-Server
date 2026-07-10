@@ -1,0 +1,74 @@
+databaseChangeLog:
+  - changeSet:
+      id: 4-create-poker
+      author: bulba
+      changes:
+        - createTable:
+            tableName: poker_tasks
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: room_name
+                  type: varchar(60)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: title
+                  type: varchar(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: average
+                  type: double precision
+              - column:
+                  name: recommended
+                  type: int
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: poker_votes
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: task_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_poker_votes_task
+                    references: poker_tasks(id)
+                    deleteCascade: true
+              - column:
+                  name: player_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_poker_votes_player
+                    references: players(id)
+                    deleteCascade: true
+              - column:
+                  name: value
+                  type: varchar(10)
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: poker_votes
+            indexName: idx_poker_votes_task
+            columns:
+              - column:
+                  name: task_id
