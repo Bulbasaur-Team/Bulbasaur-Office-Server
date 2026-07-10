@@ -64,4 +64,12 @@ public class PresenceRegistry {
                 .filter(s -> !s.sessionId().equals(exceptSessionId))
                 .toList();
     }
+
+    /** Все открытые сессии игрока (у одного игрока может быть несколько вкладок). */
+    public List<WebSocketSession> sessionsOf(UUID playerId) {
+        return sessions.values().stream()
+                .filter(s -> playerId.equals(s.playerId()))
+                .map(PresenceState::session)
+                .toList();
+    }
 }

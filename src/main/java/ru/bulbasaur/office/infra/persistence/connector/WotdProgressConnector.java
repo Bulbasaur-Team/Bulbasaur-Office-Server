@@ -80,6 +80,24 @@ public class WotdProgressConnector implements WotdProgressRepositoryPort {
         return repository.countByGameAndDayAndSolvedTrueAndAttemptsLessThan(game, day, (int) attempts);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasSolvedAny(UUID playerId, GameId game) {
+        return repository.existsByPlayer_IdAndGameAndSolvedTrue(playerId, game);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<LocalDate> solvedDays(UUID playerId, GameId game) {
+        return repository.findSolvedDays(playerId, game);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean wasEverFirst(UUID playerId, GameId game) {
+        return repository.wasEverFirst(playerId, game.name());
+    }
+
     private List<String> split(String guesses) {
         if (guesses == null || guesses.isEmpty()) {
             return List.of();

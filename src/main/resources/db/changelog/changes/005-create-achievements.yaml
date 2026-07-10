@@ -1,0 +1,38 @@
+databaseChangeLog:
+  - changeSet:
+      id: 5-create-achievements
+      author: bulba
+      changes:
+        - createTable:
+            tableName: achievements
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: player_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_achievements_player
+                    references: players(id)
+                    deleteCascade: true
+              - column:
+                  name: code
+                  type: varchar(40)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: granted_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: achievements
+            columnNames: player_id, code
+            constraintName: uq_achievements_player_code

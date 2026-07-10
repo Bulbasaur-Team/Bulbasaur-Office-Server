@@ -11,3 +11,6 @@ databaseChangeLog:
   - include:
       file: changes/004-create-poker.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/005-create-achievements.yaml
+      relativeToChangelogFile: true

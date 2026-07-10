@@ -27,4 +27,33 @@ public interface WotdProgressJpaRepository extends JpaRepository<WotdProgressEnt
                                                   Pageable pageable);
 
     long countByGameAndDayAndSolvedTrueAndAttemptsLessThan(GameId game, LocalDate day, int attempts);
+
+    boolean existsByPlayer_IdAndGameAndSolvedTrue(UUID playerId, GameId game);
+
+    @Query("""
+            select w.day from WotdProgressEntity w
+            where w.player.id = :playerId and w.game = :game and w.solved = true
+            order by w.day
+            """)
+    List<LocalDate> findSolvedDays(@Param("playerId") UUID playerId, @Param("game") GameId game);
+
+    /**
+     * Был ли игрок хотя бы раз первым в лидерборде слова дня: есть день, где он
+     * разгадал слово и никто не разгадал его с меньшим числом попыток (а при равных —
+     * раньше по времени).
+     */
+    @Query(value = """
+            select exists(
+                select 1 from wotd_progress w
+                where w.player_id = :playerId and w.game = :game and w.solved = true
+                  and not exists (
+                      select 1 from wotd_progress o
+                      where o.game = w.game and o.day = w.day and o.solved = true
+                        and o.player_id <> w.player_id
+                        and (o.attempts < w.attempts
+                             or (o.attempts = w.attempts and o.updated_at < w.updated_at))
+                  )
+            )
+            """, nativeQuery = true)
+    boolean wasEverFirst(@Param("playerId") UUID playerId, @Param("game") String game);
 }

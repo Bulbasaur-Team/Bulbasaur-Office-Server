@@ -21,4 +21,13 @@ public interface WotdProgressRepositoryPort {
     Optional<Long> findPlayerSolvedAttempts(UUID playerId, GameId game, LocalDate day);
 
     long countPlayersWithFewerAttempts(GameId game, LocalDate day, long attempts);
+
+    /** Разгадывал ли игрок слово дня в этой игре хотя бы раз. */
+    boolean hasSolvedAny(UUID playerId, GameId game);
+
+    /** Дни, в которые игрок разгадал слово дня в этой игре (по возрастанию). */
+    List<LocalDate> solvedDays(UUID playerId, GameId game);
+
+    /** Был ли игрок хотя бы раз первым в лидерборде слова дня этой игры. */
+    boolean wasEverFirst(UUID playerId, GameId game);
 }

@@ -11,6 +11,7 @@ import ru.bulbasaur.office.usecase.dto.StoredPlayer;
 import ru.bulbasaur.office.usecase.port.out.PlayerRepositoryPort;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -45,5 +46,11 @@ public class PlayerConnector implements PlayerRepositoryPort {
     @Transactional
     public void deleteById(UUID id) {
         repository.deleteAccount(id);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UUID> findAllIds() {
+        return repository.findAllIds();
     }
 }

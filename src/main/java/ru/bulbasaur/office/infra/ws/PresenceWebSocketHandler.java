@@ -36,6 +36,8 @@ import ru.bulbasaur.office.infra.ws.dto.PokerTaskMessage;
 import ru.bulbasaur.office.infra.ws.dto.PokerVoteMessage;
 import ru.bulbasaur.office.infra.ws.dto.RoomMessage;
 import ru.bulbasaur.office.infra.ws.dto.SnapshotOut;
+import ru.bulbasaur.office.domain.model.Achievement;
+import ru.bulbasaur.office.usecase.AchievementService;
 import ru.bulbasaur.office.usecase.RecordPokerVotingUsecase;
 import ru.bulbasaur.office.usecase.dto.PokerVotingResult;
 import ru.bulbasaur.office.usecase.dto.RecordPokerVotingCommand;
@@ -58,7 +60,14 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
     private final ItemRegistry itemRegistry;
     private final PokerRegistry pokerRegistry;
     private final RecordPokerVotingUsecase recordPokerVoting;
+    private final AchievementService achievements;
     private final JsonMapper jsonMapper;
+
+    // Локация и предмет, за удар по которому выдаётся ачивка «Волейболист».
+    private static final String VOLLEYBALL_LOCATION = "vietnam-beach";
+    private static final String VOLLEYBALL_ITEM_PREFIX = "volleyball";
+    // Теннисный мяч — ачивка «Теннисист» (без привязки к локации).
+    private static final String TENNIS_ITEM_PREFIX = "tennis";
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
@@ -155,6 +164,9 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
             return;
         }
         broadcast(state.locationId(), session.getId(), EmoteOut.of(session.getId(), emote.name()));
+        if (emote == Emote.HEART) {
+            achievements.grant(state.playerId(), Achievement.LOVER);
+        }
     }
 
     /**
@@ -175,6 +187,19 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
                     msg.itemId(), msg.kickId(), msg.x(), msg.y(), msg.vx(), msg.vy());
             send(session, out);
             broadcast(state.locationId(), session.getId(), out);
+            grantKickAchievements(state, msg.itemId());
+        }
+    }
+
+    private void grantKickAchievements(PresenceState state, String itemId) {
+        if (itemId == null) {
+            return;
+        }
+        if (VOLLEYBALL_LOCATION.equals(state.locationId()) && itemId.startsWith(VOLLEYBALL_ITEM_PREFIX)) {
+            achievements.grant(state.playerId(), Achievement.VOLLEYBALL);
+        }
+        if (itemId.startsWith(TENNIS_ITEM_PREFIX)) {
+            achievements.grant(state.playerId(), Achievement.TENNIS);
         }
     }
 

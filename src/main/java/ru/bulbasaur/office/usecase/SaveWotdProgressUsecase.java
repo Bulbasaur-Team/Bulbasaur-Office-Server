@@ -17,6 +17,7 @@ public class SaveWotdProgressUsecase {
 
     private final WotdProgressRepositoryPort progress;
     private final DayPort day;
+    private final AchievementService achievements;
 
     public WotdProgressView execute(SaveWotdProgressCommand command) {
         LocalDate today = day.today();
@@ -40,6 +41,7 @@ public class SaveWotdProgressUsecase {
                 .attempts(command.attempts())
                 .guesses(command.guesses())
                 .build());
+        achievements.recheck(command.playerId());
         return new WotdProgressView(command.solved(), command.attempts(), command.guesses());
     }
 }
