@@ -36,7 +36,10 @@ public class AchievementService {
     private static final long JUMPER_SCORE = 10_000;
     private static final long GREAT_JUMPER_SCORE = 100_000;
     private static final long LEGEND_JUMPER_SCORE = 200_000;
-    private static final long TRUCKER_PRO_MILLIS = 4_500;   // 4.5 секунды
+    // Лидерборд показывает время как (мс/1000).toFixed(1): как «4.5 с» отображается
+    // всё вплоть до 4550 мс включительно (4.55 в double ≈ 4.5499…, округляется к 4.5),
+    // а 4551 мс — уже «4.6 с».
+    private static final long TRUCKER_PRO_MILLIS = 4_550;
     private static final long GUARD_WORDS = 10;
     private static final int DISCIPLINE_DAYS = 5;
 
