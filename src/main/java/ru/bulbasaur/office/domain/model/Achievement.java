@@ -9,7 +9,7 @@ import java.util.Optional;
  */
 public enum Achievement {
     BULBAZAVR("bulbazavr", "Я уже Бульбазавр!", "Зарегистрироваться в игре"),
-    VOLLEYBALL("volleyball", "Волейболист", "Пнуть волейбольный мяч на пляже"),
+    VOLLEYBALL("volleyball", "Волейболист", "Пнуть волейбольный мяч на пляже в режиме мультиплеера"),
     JUMPER("jumper", "Попрыгун", "Хотя бы раз сыграть в Bulba Jump"),
     JUMPER_10K("jumper_10k", "Прыгун", "Набрать в Bulba Jump 10000 очков"),
     JUMPER_100K("jumper_100k", "Великий прыгун", "Набрать в Bulba Jump 100000 очков"),
@@ -25,7 +25,7 @@ public enum Achievement {
     CHAMPION("champion", "Чемпион", "Попасть на первую строчку лидерборда"),
     DAY_CHAMPION("day_champion", "Чемпион дня", "Занять первое место в режиме «Слово дня»"),
     LOVER("lover", "Любвеобильный", "Отправить эмодзи сердечка в режиме мультиплеера"),
-    TENNIS("tennis", "Теннисист", "Пнуть теннисный мячик");
+    TENNIS("tennis", "Теннисист", "Пнуть теннисный мячик в режиме мультиплеера");
 
     private final String code;
     private final String title;
