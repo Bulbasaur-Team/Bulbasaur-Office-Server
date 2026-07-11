@@ -28,6 +28,6 @@ public interface WotdProgressRepositoryPort {
     /** Дни, в которые игрок разгадал слово дня в этой игре (по возрастанию). */
     List<LocalDate> solvedDays(UUID playerId, GameId game);
 
-    /** Был ли игрок хотя бы раз первым в лидерборде слова дня этой игры. */
-    boolean wasEverFirst(UUID playerId, GameId game);
+    /** Разгадывал ли игрок слово дня этой игры раньше всех хотя бы в один из дней. */
+    boolean wasEverFirstToSolve(UUID playerId, GameId game);
 }

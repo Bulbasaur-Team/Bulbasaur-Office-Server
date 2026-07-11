@@ -20,7 +20,7 @@ public enum Achievement {
     PSYCHIC("psychic", "Экстрасенс", "Отгадать 1 слово в Bulba Guess"),
     DECODER("decoder", "Дешифратор", "Отгадать 1 слово в Bulba Wordle"),
     GUARD("guard", "Охранник", "Отгадать 10 слов в Bulba Wordle"),
-    LIGHTNING("lightning", "Молния Маккуин", "Пройти слово дня быстрее всех"),
+    LIGHTNING("lightning", "Молния Маккуин", "Разгадать слово дня раньше всех"),
     DISCIPLINE("discipline", "Дисциплина", "Пройти слово дня в Bulba Wordle 5 дней подряд"),
     CHAMPION("champion", "Чемпион", "Попасть на первую строчку лидерборда"),
     DAY_CHAMPION("day_champion", "Чемпион дня", "Занять первое место в режиме «Слово дня»"),

@@ -38,9 +38,8 @@ public interface WotdProgressJpaRepository extends JpaRepository<WotdProgressEnt
     List<LocalDate> findSolvedDays(@Param("playerId") UUID playerId, @Param("game") GameId game);
 
     /**
-     * Был ли игрок хотя бы раз первым в лидерборде слова дня: есть день, где он
-     * разгадал слово и никто не разгадал его с меньшим числом попыток (а при равных —
-     * раньше по времени).
+     * Разгадал ли игрок слово дня раньше всех хотя бы в один день: есть день, где он
+     * решил слово и никто другой не решил его раньше по времени (число попыток не важно).
      */
     @Query(value = """
             select exists(
@@ -50,10 +49,9 @@ public interface WotdProgressJpaRepository extends JpaRepository<WotdProgressEnt
                       select 1 from wotd_progress o
                       where o.game = w.game and o.day = w.day and o.solved = true
                         and o.player_id <> w.player_id
-                        and (o.attempts < w.attempts
-                             or (o.attempts = w.attempts and o.updated_at < w.updated_at))
+                        and o.updated_at < w.updated_at
                   )
             )
             """, nativeQuery = true)
-    boolean wasEverFirst(@Param("playerId") UUID playerId, @Param("game") String game);
+    boolean wasEverFirstToSolve(@Param("playerId") UUID playerId, @Param("game") String game);
 }

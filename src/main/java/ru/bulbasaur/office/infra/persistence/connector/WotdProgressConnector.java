@@ -94,8 +94,8 @@ public class WotdProgressConnector implements WotdProgressRepositoryPort {
 
     @Override
     @Transactional(readOnly = true)
-    public boolean wasEverFirst(UUID playerId, GameId game) {
-        return repository.wasEverFirst(playerId, game.name());
+    public boolean wasEverFirstToSolve(UUID playerId, GameId game) {
+        return repository.wasEverFirstToSolve(playerId, game.name());
     }
 
     private List<String> split(String guesses) {

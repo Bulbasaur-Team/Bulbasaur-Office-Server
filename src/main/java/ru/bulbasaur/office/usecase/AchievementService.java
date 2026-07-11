@@ -131,8 +131,8 @@ public class AchievementService {
             case PSYCHIC -> hasEntry(playerId, GameId.BULBA_GUESS) || wotd.hasSolvedAny(playerId, GameId.BULBA_GUESS);
             case DECODER -> hasEntry(playerId, GameId.BULBA_WORDLE) || wotd.hasSolvedAny(playerId, GameId.BULBA_WORDLE);
             case GUARD -> reached(playerId, GameId.BULBA_WORDLE, GUARD_WORDS);
-            case LIGHTNING -> wotd.wasEverFirst(playerId, GameId.BULBA_GUESS)
-                    || wotd.wasEverFirst(playerId, GameId.BULBA_WORDLE);
+            case LIGHTNING -> wotd.wasEverFirstToSolve(playerId, GameId.BULBA_GUESS)
+                    || wotd.wasEverFirstToSolve(playerId, GameId.BULBA_WORDLE);
             case DISCIPLINE -> hasConsecutiveSolvedDays(playerId, GameId.BULBA_WORDLE, DISCIPLINE_DAYS);
             case CHAMPION -> isFirstInAnyLeaderboard(playerId);
         };
