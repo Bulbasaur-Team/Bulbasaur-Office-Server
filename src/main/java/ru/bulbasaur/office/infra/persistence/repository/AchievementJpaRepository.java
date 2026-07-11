@@ -13,6 +13,10 @@ public interface AchievementJpaRepository extends JpaRepository<AchievementEntit
 
     List<AchievementEntity> findByPlayerId(UUID playerId);
 
+    /** Сколько игроков владеет каждой ачивкой (код -> число владельцев). */
+    @Query("select a.code as code, count(a.id) as owners from AchievementEntity a group by a.code")
+    List<AchievementOwnersProjection> countOwnersByCode();
+
     /**
      * Выдать ачивку, если её ещё нет. Возвращает число вставленных строк:
      * 1 — выдана только что, 0 — уже была.

@@ -7,6 +7,7 @@ import ru.bulbasaur.office.domain.model.Achievement;
 import ru.bulbasaur.office.domain.model.GameId;
 import ru.bulbasaur.office.domain.model.LeaderboardRow;
 import ru.bulbasaur.office.usecase.dto.AchievementView;
+import ru.bulbasaur.office.usecase.exception.PlayerNotFoundException;
 import ru.bulbasaur.office.usecase.port.out.AchievementNotifierPort;
 import ru.bulbasaur.office.usecase.port.out.AchievementRepositoryPort;
 import ru.bulbasaur.office.usecase.port.out.DayPort;
@@ -16,8 +17,10 @@ import ru.bulbasaur.office.usecase.port.out.WotdProgressRepositoryPort;
 
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -55,12 +58,28 @@ public class AchievementService {
     private final PlayerRepositoryPort players;
     private final DayPort day;
 
-    /** Список ачивок игрока с признаком «получена» — для окна «Мои ачивки». */
+    /**
+     * Список ачивок игрока для окна ачивок: признак «получена» и редкость (процент
+     * игроков, владеющих ачивкой). Отсортирован от самых распространённых к самым редким.
+     */
     public List<AchievementView> list(UUID playerId) {
         Set<Achievement> owned = achievements.findOwned(playerId);
+        Map<Achievement, Long> owners = achievements.countOwners();
+        long totalPlayers = Math.max(1, players.countPlayers());
         return Arrays.stream(Achievement.values())
-                .map(a -> new AchievementView(a.code(), a.title(), a.description(), a.image(), owned.contains(a)))
+                .map(a -> new AchievementView(
+                        a.code(), a.title(), a.description(), a.image(), owned.contains(a),
+                        owners.getOrDefault(a, 0L) * 100.0 / totalPlayers))
+                .sorted(Comparator.comparingDouble(AchievementView::percent).reversed())
                 .toList();
+    }
+
+    /** То же для чужого игрока по логину — для экрана сообщества. */
+    public List<AchievementView> listByLogin(String login) {
+        UUID playerId = players.findByLogin(login)
+                .orElseThrow(() -> new PlayerNotFoundException(login))
+                .id();
+        return list(playerId);
     }
 
     /**

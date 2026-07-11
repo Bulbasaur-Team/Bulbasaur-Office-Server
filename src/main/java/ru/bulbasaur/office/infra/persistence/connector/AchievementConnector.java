@@ -6,9 +6,12 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.bulbasaur.office.domain.model.Achievement;
 import ru.bulbasaur.office.infra.persistence.entity.AchievementEntity;
 import ru.bulbasaur.office.infra.persistence.repository.AchievementJpaRepository;
+import ru.bulbasaur.office.infra.persistence.repository.AchievementOwnersProjection;
 import ru.bulbasaur.office.usecase.port.out.AchievementRepositoryPort;
 
+import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -32,5 +35,15 @@ public class AchievementConnector implements AchievementRepositoryPort {
     @Transactional
     public boolean grant(UUID playerId, Achievement achievement) {
         return repository.insertIfAbsent(playerId, achievement.code()) > 0;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Achievement, Long> countOwners() {
+        Map<Achievement, Long> owners = new EnumMap<>(Achievement.class);
+        for (AchievementOwnersProjection row : repository.countOwnersByCode()) {
+            Achievement.fromCode(row.getCode()).ifPresent(a -> owners.put(a, row.getOwners()));
+        }
+        return owners;
     }
 }

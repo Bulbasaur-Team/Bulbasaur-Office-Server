@@ -22,4 +22,14 @@ public interface PlayerJpaRepository extends JpaRepository<PlayerEntity, UUID> {
     @Modifying
     @Query("delete from PlayerEntity p where p.id = :id")
     void deleteAccount(@Param("id") UUID id);
+
+    /** Игроки в порядке регистрации с числом полученных ачивок — для сообщества. */
+    @Query("""
+            select p.login as login, p.role as role, count(a.id) as owned
+            from PlayerEntity p
+            left join AchievementEntity a on a.playerId = p.id
+            group by p.id, p.login, p.role, p.createdAt
+            order by p.createdAt
+            """)
+    List<CommunityRowProjection> findCommunityRows();
 }

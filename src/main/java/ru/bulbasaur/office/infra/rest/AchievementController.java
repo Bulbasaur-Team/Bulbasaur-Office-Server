@@ -3,6 +3,7 @@ package ru.bulbasaur.office.infra.rest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.bulbasaur.office.infra.rest.dto.AchievementResponse;
@@ -22,9 +23,19 @@ public class AchievementController {
 
     @GetMapping
     public AchievementsResponse list(@AuthenticationPrincipal AuthPrincipal player) {
-        List<AchievementView> views = achievements.list(player.id());
+        return toResponse(achievements.list(player.id()));
+    }
+
+    /** Ачивки другого игрока — для экрана сообщества. */
+    @GetMapping("/{login}")
+    public AchievementsResponse listOf(@PathVariable String login) {
+        return toResponse(achievements.listByLogin(login));
+    }
+
+    private AchievementsResponse toResponse(List<AchievementView> views) {
         List<AchievementResponse> items = views.stream()
-                .map(v -> new AchievementResponse(v.code(), v.title(), v.description(), v.image(), v.owned()))
+                .map(v -> new AchievementResponse(
+                        v.code(), v.title(), v.description(), v.image(), v.owned(), v.percent()))
                 .toList();
         int owned = (int) items.stream().filter(AchievementResponse::owned).count();
         return new AchievementsResponse(items, owned, items.size());

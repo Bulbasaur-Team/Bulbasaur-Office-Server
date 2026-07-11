@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: 6-add-player-role
+      author: bulba
+      changes:
+        - addColumn:
+            tableName: players
+            columns:
+              - column:
+                  name: role
+                  type: varchar(40)
