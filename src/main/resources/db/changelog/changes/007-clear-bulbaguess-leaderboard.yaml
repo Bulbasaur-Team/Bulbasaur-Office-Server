@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: 7-clear-bulbaguess-leaderboard
+      author: bulba
+      comment: >
+        Лидерборд Bulba Guess сменил смысл: было «меньше попыток — лучше», стало
+        «всего угаданных слов» (накопительно). Старые значения — числа попыток —
+        в новой шкале бессмысленны, чистим.
+      changes:
+        - delete:
+            tableName: leaderboard
+            where: game = 'BULBA_GUESS'

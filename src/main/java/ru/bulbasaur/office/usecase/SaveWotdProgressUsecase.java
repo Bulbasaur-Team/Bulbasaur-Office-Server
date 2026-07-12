@@ -2,9 +2,11 @@ package ru.bulbasaur.office.usecase;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import ru.bulbasaur.office.domain.model.GameId;
 import ru.bulbasaur.office.usecase.dto.WotdProgressView;
 import ru.bulbasaur.office.usecase.dto.SaveWotdProgressCommand;
 import ru.bulbasaur.office.usecase.dto.WotdProgressUpsert;
+import ru.bulbasaur.office.usecase.port.out.LeaderboardRepositoryPort;
 import ru.bulbasaur.office.usecase.port.out.WotdProgressRepositoryPort;
 import ru.bulbasaur.office.usecase.port.out.DayPort;
 
@@ -18,6 +20,7 @@ public class SaveWotdProgressUsecase {
     private final WotdProgressRepositoryPort progress;
     private final DayPort day;
     private final AchievementService achievements;
+    private final LeaderboardRepositoryPort leaderboard;
 
     public WotdProgressView execute(SaveWotdProgressCommand command) {
         LocalDate today = day.today();
@@ -41,6 +44,12 @@ public class SaveWotdProgressUsecase {
                 .attempts(command.attempts())
                 .guesses(command.guesses())
                 .build());
+        // Разгаданное слово дня засчитывается и в обычный (накопительный) лидерборд игры.
+        // Сюда попадаем только если день ещё не был solved — двойного зачёта не будет.
+        if (command.solved()) {
+            GameId game = command.game();
+            leaderboard.submit(command.playerId(), game, 1, game.direction(), game.accumulate());
+        }
         achievements.recheck(command.playerId());
         return new WotdProgressView(command.solved(), command.attempts(), command.guesses());
     }

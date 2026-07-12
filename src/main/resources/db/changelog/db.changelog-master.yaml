@@ -17,3 +17,6 @@ databaseChangeLog:
   - include:
       file: changes/006-add-player-role.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/007-clear-bulbaguess-leaderboard.yaml
+      relativeToChangelogFile: true
