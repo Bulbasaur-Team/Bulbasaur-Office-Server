@@ -1,0 +1,42 @@
+databaseChangeLog:
+  - changeSet:
+      id: 8-create-event-log
+      author: bulba
+      changes:
+        - createTable:
+            tableName: event_log
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: level
+                  type: varchar(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: logger
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: message
+                  type: text
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: event_log
+            indexName: idx_event_log_created_at
+            columns:
+              - column:
+                  name: created_at

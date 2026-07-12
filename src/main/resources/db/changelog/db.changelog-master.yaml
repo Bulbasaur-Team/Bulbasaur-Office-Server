@@ -20,3 +20,6 @@ databaseChangeLog:
   - include:
       file: changes/007-clear-bulbaguess-leaderboard.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/008-create-event-log.yaml
+      relativeToChangelogFile: true

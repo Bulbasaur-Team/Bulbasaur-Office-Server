@@ -18,12 +18,14 @@ public class RegisterUsecase {
     private final PasswordHasherPort passwordHasher;
     private final TokenPort tokens;
     private final AchievementService achievements;
+    private final EventLogService eventLog;
 
     public AuthResult execute(String login, String rawPassword) {
         if (players.existsByLogin(login)) {
             throw new LoginAlreadyTakenException(login);
         }
         Player player = players.create(login, passwordHasher.hash(rawPassword));
+        eventLog.playerRegistered(player.login());
         achievements.recheck(player.id());
         return new AuthResult(tokens.issue(player.id(), player.login()), player.login());
     }

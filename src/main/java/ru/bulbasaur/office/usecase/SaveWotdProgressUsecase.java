@@ -3,10 +3,12 @@ package ru.bulbasaur.office.usecase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.bulbasaur.office.domain.model.GameId;
+import ru.bulbasaur.office.usecase.dto.StoredPlayer;
 import ru.bulbasaur.office.usecase.dto.WotdProgressView;
 import ru.bulbasaur.office.usecase.dto.SaveWotdProgressCommand;
 import ru.bulbasaur.office.usecase.dto.WotdProgressUpsert;
 import ru.bulbasaur.office.usecase.port.out.LeaderboardRepositoryPort;
+import ru.bulbasaur.office.usecase.port.out.PlayerRepositoryPort;
 import ru.bulbasaur.office.usecase.port.out.WotdProgressRepositoryPort;
 import ru.bulbasaur.office.usecase.port.out.DayPort;
 
@@ -21,6 +23,8 @@ public class SaveWotdProgressUsecase {
     private final DayPort day;
     private final AchievementService achievements;
     private final LeaderboardRepositoryPort leaderboard;
+    private final PlayerRepositoryPort players;
+    private final EventLogService eventLog;
 
     public WotdProgressView execute(SaveWotdProgressCommand command) {
         LocalDate today = day.today();
@@ -49,6 +53,9 @@ public class SaveWotdProgressUsecase {
         if (command.solved()) {
             GameId game = command.game();
             leaderboard.submit(command.playerId(), game, 1, game.direction(), game.accumulate());
+            players.findById(command.playerId())
+                    .map(StoredPlayer::login)
+                    .ifPresent(login -> eventLog.wotdSolved(login, game, command.attempts()));
         }
         achievements.recheck(command.playerId());
         return new WotdProgressView(command.solved(), command.attempts(), command.guesses());

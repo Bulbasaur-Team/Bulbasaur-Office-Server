@@ -57,6 +57,7 @@ public class AchievementService {
     private final WotdProgressRepositoryPort wotd;
     private final PlayerRepositoryPort players;
     private final DayPort day;
+    private final EventLogService eventLog;
 
     /**
      * Список ачивок игрока для окна ачивок: признак «получена» и редкость (процент
@@ -129,6 +130,8 @@ public class AchievementService {
     public void grant(UUID playerId, Achievement achievement) {
         if (achievements.grant(playerId, achievement)) {
             notifier.notifyGranted(playerId, achievement);
+            players.findById(playerId)
+                    .ifPresent(player -> eventLog.achievementGranted(player.login(), achievement));
         }
     }
 
