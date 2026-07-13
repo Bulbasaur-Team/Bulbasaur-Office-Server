@@ -58,6 +58,26 @@ public class ItemRegistry {
         return item != null && item.moveByOwner(sessionId, x, y, vx, vy);
     }
 
+    /**
+     * Предмет положили на землю (бросили из лап): фиксируем точку покоя, чтобы
+     * остальные увидели его там, а не на месте, где его подобрали.
+     */
+    public boolean rest(String locationId, String itemId, double x, double y) {
+        if (itemId == null || itemId.length() > MAX_ITEM_ID_LENGTH) {
+            return false;
+        }
+        Map<String, ItemState> items = itemsOf(locationId);
+        ItemState item = items.get(itemId);
+        if (item == null) {
+            if (items.size() >= MAX_ITEMS_PER_LOCATION) {
+                return false;
+            }
+            item = items.computeIfAbsent(itemId, ItemState::new);
+        }
+        item.rest(x, y);
+        return true;
+    }
+
     private Map<String, ItemState> itemsOf(String locationId) {
         return byLocation.computeIfAbsent(locationId, l -> new ConcurrentHashMap<>());
     }

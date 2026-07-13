@@ -27,6 +27,10 @@ public class PresenceState {
     private volatile double y;
     private volatile boolean facing;
 
+    // Предмет в лапах: остальные рисуют его на игроке и видят, как он едет с ним между локациями.
+    private volatile String heldItemId;
+    private volatile String heldItemType;
+
     public PresenceState(WebSocketSession session, UUID playerId, String login) {
         this.sessionId = session.getId();
         this.session = session;
@@ -46,6 +50,16 @@ public class PresenceState {
         this.x = x;
         this.y = y;
         this.facing = facing;
+    }
+
+    public void hold(String itemId, String itemType) {
+        this.heldItemId = itemId;
+        this.heldItemType = itemType;
+    }
+
+    public void dropHeld() {
+        this.heldItemId = null;
+        this.heldItemType = null;
     }
 
     /** true — игрок уже прислал join и получил роль/локацию (до этого он невидим для остальных). */

@@ -53,6 +53,19 @@ public class ItemState {
         return true;
     }
 
+    /**
+     * Предмет положили на землю: он замирает в этой точке и остаётся ничьим —
+     * следующий удар любого игрока разыгрывается заново, без окна арбитража.
+     */
+    public synchronized void rest(double x, double y) {
+        this.x = x;
+        this.y = y;
+        this.vx = 0;
+        this.vy = 0;
+        this.ownerSessionId = null;
+        this.lastKickAtMillis = 0;
+    }
+
     public synchronized ItemStateDto toDto() {
         return new ItemStateDto(id, x, y, vx, vy);
     }

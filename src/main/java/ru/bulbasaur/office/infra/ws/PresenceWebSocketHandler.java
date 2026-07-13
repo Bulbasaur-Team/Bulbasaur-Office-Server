@@ -15,12 +15,23 @@ import ru.bulbasaur.office.infra.ws.dto.ChatMessage;
 import ru.bulbasaur.office.infra.ws.dto.ChatOut;
 import ru.bulbasaur.office.infra.ws.dto.EmoteMessage;
 import ru.bulbasaur.office.infra.ws.dto.EmoteOut;
+import ru.bulbasaur.office.infra.ws.dto.ItemDropMessage;
+import ru.bulbasaur.office.infra.ws.dto.ItemGoneMessage;
+import ru.bulbasaur.office.infra.ws.dto.ItemGrabMessage;
+import ru.bulbasaur.office.infra.ws.dto.ItemHeldOut;
 import ru.bulbasaur.office.infra.ws.dto.ItemKickMessage;
 import ru.bulbasaur.office.infra.ws.dto.ItemKickedOut;
 import ru.bulbasaur.office.infra.ws.dto.ItemMoveMessage;
+import ru.bulbasaur.office.infra.ws.dto.ItemDroppedOut;
 import ru.bulbasaur.office.infra.ws.dto.ItemMovedOut;
+import ru.bulbasaur.office.infra.ws.dto.ItemPlaceMessage;
+import ru.bulbasaur.office.infra.ws.dto.ItemPlacedOut;
+import ru.bulbasaur.office.infra.ws.dto.ItemReleasedOut;
+import ru.bulbasaur.office.infra.ws.dto.ItemRemovedOut;
 import ru.bulbasaur.office.infra.ws.dto.ItemStateDto;
 import ru.bulbasaur.office.infra.ws.dto.ItemsOut;
+import ru.bulbasaur.office.infra.ws.dto.PlacedItemDto;
+import ru.bulbasaur.office.infra.ws.dto.PlacedItemsOut;
 import ru.bulbasaur.office.infra.ws.dto.JoinMessage;
 import ru.bulbasaur.office.infra.ws.dto.JoinedOut;
 import ru.bulbasaur.office.infra.ws.dto.LeftOut;
@@ -42,8 +53,11 @@ import ru.bulbasaur.office.usecase.RecordPokerVotingUsecase;
 import ru.bulbasaur.office.usecase.dto.PokerVotingResult;
 import ru.bulbasaur.office.usecase.dto.RecordPokerVotingCommand;
 
+import org.springframework.scheduling.annotation.Scheduled;
+
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -58,6 +72,7 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
 
     private final PresenceRegistry registry;
     private final ItemRegistry itemRegistry;
+    private final PlacedItemRegistry placedItemRegistry;
     private final PokerRegistry pokerRegistry;
     private final RecordPokerVotingUsecase recordPokerVoting;
     private final AchievementService achievements;
@@ -87,6 +102,10 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
             case "emote" -> onEmote(session, jsonMapper.treeToValue(node, EmoteMessage.class));
             case "itemKick" -> onItemKick(session, jsonMapper.treeToValue(node, ItemKickMessage.class));
             case "itemMove" -> onItemMove(session, jsonMapper.treeToValue(node, ItemMoveMessage.class));
+            case "itemGrab" -> onItemGrab(session, jsonMapper.treeToValue(node, ItemGrabMessage.class));
+            case "itemDrop" -> onItemDrop(session, jsonMapper.treeToValue(node, ItemDropMessage.class));
+            case "itemPlace" -> onItemPlace(session, jsonMapper.treeToValue(node, ItemPlaceMessage.class));
+            case "itemGone" -> onItemGone(session, jsonMapper.treeToValue(node, ItemGoneMessage.class));
             case "pokerList" -> onPokerList(session);
             case "pokerCreate" -> onPokerCreate(session, jsonMapper.treeToValue(node, PokerCreateMessage.class));
             case "pokerJoin" -> onPokerJoin(session, jsonMapper.treeToValue(node, PokerJoinMessage.class));
@@ -104,6 +123,12 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         PresenceState removed = registry.remove(session.getId());
         if (removed != null && removed.isPlaced()) {
+            // Предмет из лап ушедшего роняем на его последнюю позицию: иначе он
+            // остался бы уничтоженным у всех, кто был в комнате.
+            if (removed.heldItemId() != null) {
+                dropToFloor(removed, session.getId(),
+                        removed.heldItemId(), removed.heldItemType(), removed.x(), removed.y());
+            }
             broadcast(removed.locationId(), session.getId(), LeftOut.of(session.getId()));
         }
         if (removed != null) {
@@ -215,6 +240,93 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
         if (accepted) {
             broadcast(state.locationId(), session.getId(),
                     ItemMovedOut.of(msg.itemId(), msg.x(), msg.y(), msg.vx(), msg.vy()));
+        }
+    }
+
+    /**
+     * Взяли предмет в лапы: мяч с пола, чашку со стола или свежую чашку с кухни.
+     * Со стола предмет снимается (комната узнаёт об этом через itemRemoved), а сам
+     * он теперь «висит» на игроке и едет с ним по локациям.
+     */
+    private void onItemGrab(WebSocketSession session, ItemGrabMessage msg) {
+        PresenceState state = registry.get(session.getId());
+        if (state == null || !state.isPlaced() || msg.itemId() == null || msg.itemType() == null) {
+            return;
+        }
+        state.hold(msg.itemId(), msg.itemType());
+        if (placedItemRegistry.remove(state.locationId(), msg.itemId())) {
+            broadcast(state.locationId(), session.getId(), ItemRemovedOut.of(msg.itemId()));
+        }
+        broadcast(state.locationId(), session.getId(),
+                ItemHeldOut.of(session.getId(), msg.itemId(), msg.itemType()));
+    }
+
+    /** Бросили мяч на пол: он замирает в этой точке — остальные создают его там заново. */
+    private void onItemDrop(WebSocketSession session, ItemDropMessage msg) {
+        PresenceState state = registry.get(session.getId());
+        if (state == null || !state.isPlaced()) {
+            return;
+        }
+        state.dropHeld();
+        dropToFloor(state, session.getId(), msg.itemId(), msg.itemType(), msg.x(), msg.y());
+        broadcast(state.locationId(), session.getId(), ItemReleasedOut.of(session.getId()));
+    }
+
+    /**
+     * Предмет ложится на пол локации и рассылается остальным. Обратите внимание:
+     * у них его сейчас нет (он был в лапах), поэтому шлём тип — по нему предмет
+     * создаётся заново.
+     */
+    private void dropToFloor(PresenceState state, String exceptSessionId,
+                             String itemId, String itemType, double x, double y) {
+        if (itemRegistry.rest(state.locationId(), itemId, x, y)) {
+            broadcast(state.locationId(), exceptSessionId, ItemDroppedOut.of(itemId, itemType, x, y));
+        }
+    }
+
+    /**
+     * Поставили предмет на стол. Срок жизни берём по id предмета (назначен при первом
+     * взятии), поэтому перекладывание чашки со стола на стол его не продлевает.
+     */
+    private void onItemPlace(WebSocketSession session, ItemPlaceMessage msg) {
+        PresenceState state = registry.get(session.getId());
+        if (state == null || !state.isPlaced()) {
+            return;
+        }
+        state.dropHeld();
+        broadcast(state.locationId(), session.getId(), ItemReleasedOut.of(session.getId()));
+
+        long expiresAt = placedItemRegistry.expiryOf(msg.itemId());
+        boolean placed = placedItemRegistry.place(
+                state.locationId(), msg.itemId(), msg.itemType(), msg.tableIndex(), msg.x(), msg.y(), expiresAt);
+        if (!placed) {
+            // Место уже занято или данные не приняты — у поставившего предмет останется
+            // лежать локально до перезахода в локацию, это не ломает остальных.
+            return;
+        }
+        PlacedItemDto item = new PlacedItemDto(
+                msg.itemId(), msg.itemType(), msg.tableIndex(), msg.x(), msg.y(), expiresAt);
+        broadcast(state.locationId(), session.getId(), ItemPlacedOut.of(item));
+    }
+
+    /** У предмета в лапах вышел срок (чашка кофе) — руки освободились. */
+    private void onItemGone(WebSocketSession session, ItemGoneMessage msg) {
+        PresenceState state = registry.get(session.getId());
+        if (state == null || !state.isPlaced()) {
+            return;
+        }
+        state.dropHeld();
+        placedItemRegistry.removeEverywhere(msg.itemId());
+        broadcast(state.locationId(), session.getId(), ItemReleasedOut.of(session.getId()));
+    }
+
+    /** Чашки, у которых вышел срок, снимаем со столов и сообщаем об этом их комнатам. */
+    @Scheduled(fixedRate = 30_000)
+    public void sweepExpiredPlacedItems() {
+        for (Map.Entry<String, List<String>> entry : placedItemRegistry.sweepExpired().entrySet()) {
+            for (String itemId : entry.getValue()) {
+                broadcast(entry.getKey(), null, ItemRemovedOut.of(itemId));
+            }
         }
     }
 
@@ -371,6 +483,9 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
         if (!items.isEmpty()) {
             send(session, ItemsOut.of(items));
         }
+        // Шлём всегда, в том числе пустой список: он же чистит у вошедшего предметы,
+        // которые кто-то успел забрать со столов, пока его в комнате не было.
+        send(session, PlacedItemsOut.of(placedItemRegistry.snapshot(locationId)));
     }
 
     private void broadcast(String locationId, String exceptSessionId, Object payload) {
@@ -382,7 +497,8 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
     private PlayerState stateOf(PresenceState state) {
         return new PlayerState(
                 state.sessionId(), state.login(), state.role().name(),
-                state.x(), state.y(), state.facing());
+                state.x(), state.y(), state.facing(),
+                state.heldItemId(), state.heldItemType());
     }
 
     private void send(WebSocketSession session, Object payload) {
