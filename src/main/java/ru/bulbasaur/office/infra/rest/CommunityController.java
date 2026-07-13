@@ -24,7 +24,8 @@ public class CommunityController {
                 .map(p -> new CommunityResponse.CommunityPlayerResponse(
                         p.login(),
                         Optional.ofNullable(p.role()).map(Role::name).orElse(null),
-                        p.ownedAchievements()))
+                        p.ownedAchievements(),
+                        p.online()))
                 .toList();
         return new CommunityResponse(players, getCommunity.totalAchievements());
     }

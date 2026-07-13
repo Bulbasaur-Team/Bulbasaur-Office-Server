@@ -2,7 +2,7 @@ package ru.bulbasaur.office.usecase.port.out;
 
 import ru.bulbasaur.office.domain.model.Player;
 import ru.bulbasaur.office.domain.model.Role;
-import ru.bulbasaur.office.usecase.dto.CommunityPlayerView;
+import ru.bulbasaur.office.usecase.dto.StoredCommunityPlayer;
 import ru.bulbasaur.office.usecase.dto.StoredPlayer;
 
 import java.util.List;
@@ -35,5 +35,5 @@ public interface PlayerRepositoryPort {
     void updatePassword(UUID id, String passwordHash);
 
     /** Игроки для сообщества в порядке регистрации, с числом полученных ачивок. */
-    List<CommunityPlayerView> community();
+    List<StoredCommunityPlayer> community();
 }

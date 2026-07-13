@@ -8,7 +8,7 @@ import ru.bulbasaur.office.domain.model.Role;
 import ru.bulbasaur.office.infra.persistence.entity.PlayerEntity;
 import ru.bulbasaur.office.infra.persistence.mapper.PlayerPersistenceMapper;
 import ru.bulbasaur.office.infra.persistence.repository.PlayerJpaRepository;
-import ru.bulbasaur.office.usecase.dto.CommunityPlayerView;
+import ru.bulbasaur.office.usecase.dto.StoredCommunityPlayer;
 import ru.bulbasaur.office.usecase.dto.StoredPlayer;
 import ru.bulbasaur.office.usecase.port.out.PlayerRepositoryPort;
 
@@ -94,9 +94,9 @@ public class PlayerConnector implements PlayerRepositoryPort {
 
     @Override
     @Transactional(readOnly = true)
-    public List<CommunityPlayerView> community() {
+    public List<StoredCommunityPlayer> community() {
         return repository.findCommunityRows().stream()
-                .map(row -> new CommunityPlayerView(row.getLogin(), row.getRole(), row.getOwned()))
+                .map(row -> new StoredCommunityPlayer(row.getLogin(), row.getRole(), row.getOwned()))
                 .toList();
     }
 }

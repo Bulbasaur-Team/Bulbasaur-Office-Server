@@ -3,18 +3,21 @@ package ru.bulbasaur.office.infra.ws;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
 import ru.bulbasaur.office.domain.model.Role;
+import ru.bulbasaur.office.usecase.port.out.OnlinePlayersPort;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * Эфемерный реестр присутствия: кто сейчас онлайн, в какой локации и где стоит.
  * Живёт только в памяти — при отключении игрок исчезает, в БД ничего не пишется.
  */
 @Component
-public class PresenceRegistry {
+public class PresenceRegistry implements OnlinePlayersPort {
 
     private final Map<String, PresenceState> sessions = new ConcurrentHashMap<>();
 
@@ -71,5 +74,13 @@ public class PresenceRegistry {
                 .filter(s -> playerId.equals(s.playerId()))
                 .map(PresenceState::session)
                 .toList();
+    }
+
+    /** Логины игроков с открытым соединением — для огонька онлайна в сообществе. */
+    @Override
+    public Set<String> onlineLogins() {
+        return sessions.values().stream()
+                .map(PresenceState::login)
+                .collect(Collectors.toSet());
     }
 }

@@ -4,19 +4,29 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.bulbasaur.office.domain.model.Achievement;
 import ru.bulbasaur.office.usecase.dto.CommunityPlayerView;
+import ru.bulbasaur.office.usecase.port.out.OnlinePlayersPort;
 import ru.bulbasaur.office.usecase.port.out.PlayerRepositoryPort;
 
 import java.util.List;
+import java.util.Set;
 
-/** Список игроков для экрана сообщества (в порядке регистрации). */
+/** Список игроков для экрана сообщества (в порядке регистрации) с признаком «сейчас в игре». */
 @Service
 @RequiredArgsConstructor
 public class GetCommunityUsecase {
 
     private final PlayerRepositoryPort players;
+    private final OnlinePlayersPort onlinePlayers;
 
     public List<CommunityPlayerView> execute() {
-        return players.community();
+        Set<String> online = onlinePlayers.onlineLogins();
+        return players.community().stream()
+                .map(p -> new CommunityPlayerView(
+                        p.login(),
+                        p.role(),
+                        p.ownedAchievements(),
+                        online.contains(p.login())))
+                .toList();
     }
 
     public int totalAchievements() {
