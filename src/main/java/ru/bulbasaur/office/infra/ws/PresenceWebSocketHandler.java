@@ -45,6 +45,9 @@ import ru.bulbasaur.office.infra.ws.dto.PokerJoinMessage;
 import ru.bulbasaur.office.infra.ws.dto.PokerRoomsOut;
 import ru.bulbasaur.office.infra.ws.dto.PokerTaskMessage;
 import ru.bulbasaur.office.infra.ws.dto.PokerVoteMessage;
+import ru.bulbasaur.office.infra.ws.dto.ProjectorIndexMessage;
+import ru.bulbasaur.office.infra.ws.dto.ProjectorOnMessage;
+import ru.bulbasaur.office.infra.ws.dto.ProjectorStateOut;
 import ru.bulbasaur.office.infra.ws.dto.RoomMessage;
 import ru.bulbasaur.office.infra.ws.dto.SnapshotOut;
 import ru.bulbasaur.office.domain.model.Achievement;
@@ -75,6 +78,7 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
     private final ItemRegistry itemRegistry;
     private final PlacedItemRegistry placedItemRegistry;
     private final PokerRegistry pokerRegistry;
+    private final ProjectorRegistry projectorRegistry;
     private final RecordPokerVotingUsecase recordPokerVoting;
     private final AchievementService achievements;
     private final LiveMetricsPort liveMetrics;
@@ -116,6 +120,9 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
             case "pokerVote" -> onPokerVote(session, jsonMapper.treeToValue(node, PokerVoteMessage.class));
             case "pokerFinish" -> onPokerFinish(session);
             case "pokerClose" -> onPokerClose(session);
+            case "projectorOn" -> onProjectorOn(session, jsonMapper.treeToValue(node, ProjectorOnMessage.class));
+            case "projectorOff" -> onProjectorOff(session);
+            case "projectorIndex" -> onProjectorIndex(session, jsonMapper.treeToValue(node, ProjectorIndexMessage.class));
             // "chat" — чат временно отключён: сообщения не обрабатываются и не рассылаются.
             default -> log.debug("неизвестный/отключённый тип WS-сообщения: {}", type);
         }
@@ -492,6 +499,39 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
+    private void onProjectorOn(WebSocketSession session, ProjectorOnMessage msg) {
+        PresenceState state = registry.get(session.getId());
+        if (state == null || !state.isPlaced()) {
+            return;
+        }
+        if (!projectorRegistry.turnOn(state.locationId(), msg.ownerId())) {
+            return;
+        }
+        broadcastAll(state.locationId(), projectorRegistry.snapshot(state.locationId()));
+    }
+
+    private void onProjectorOff(WebSocketSession session) {
+        PresenceState state = registry.get(session.getId());
+        if (state == null || !state.isPlaced()) {
+            return;
+        }
+        if (!projectorRegistry.turnOff(state.locationId())) {
+            return;
+        }
+        broadcastAll(state.locationId(), ProjectorStateOut.off());
+    }
+
+    private void onProjectorIndex(WebSocketSession session, ProjectorIndexMessage msg) {
+        PresenceState state = registry.get(session.getId());
+        if (state == null || !state.isPlaced()) {
+            return;
+        }
+        if (!projectorRegistry.setIndex(state.locationId(), msg.index())) {
+            return;
+        }
+        broadcastAll(state.locationId(), projectorRegistry.snapshot(state.locationId()));
+    }
+
     private void sendSnapshot(WebSocketSession session, String locationId) {
         List<PlayerState> others = registry.othersInRoom(locationId, session.getId()).stream()
                 .map(this::stateOf)
@@ -504,6 +544,14 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
         // Шлём всегда, в том числе пустой список: он же чистит у вошедшего предметы,
         // которые кто-то успел забрать со столов, пока его в комнате не было.
         send(session, PlacedItemsOut.of(placedItemRegistry.snapshot(locationId)));
+        send(session, projectorRegistry.snapshot(locationId));
+    }
+
+    /** Рассылка всем в локации, включая отправителя (общее состояние объекта комнаты). */
+    private void broadcastAll(String locationId, Object payload) {
+        for (PresenceState state : registry.othersInRoom(locationId, null)) {
+            send(state.session(), payload);
+        }
     }
 
     private void broadcast(String locationId, String exceptSessionId, Object payload) {
