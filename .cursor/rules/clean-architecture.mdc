@@ -1,0 +1,24 @@
+---
+description: Чистая архитектура Spring Boot бэкенда Bulba Office
+globs: "**/*.java"
+alwaysApply: false
+---
+
+# Сервер: слои
+
+Пакет: `ru.bulbasaur.office`. Слои:
+
+1. **domain** — модели/enum без Spring (`Player`, `GameId`, `Role`, `Achievement`, …)
+2. **usecase** — `*Usecase.execute(...)` / `*Service`; исходящие порты в `usecase.port.out`
+3. **infra** — REST, JPA, security, WS, scheduling; адаптеры портов: `*Connector`
+
+## Правила
+
+- Не тащи JPA/Security/REST-типы в `domain` и HTTP в usecase.
+- Controllers тонкие: `@Valid` → usecase → MapStruct/`*Response`.
+- DI: `@RequiredArgsConstructor` + `final` поля. Usecase = `@Service`, connector = `@Component`.
+- DTO: Java records (`*Request`/`*Response`, `*View`/`*Command`); Lombok `@Builder` для крупных command.
+- Ошибки: `usecase.exception.*` → `GlobalExceptionHandler` → JSON `{ "message": "..." }` (русский текст).
+- `WrongPasswordException` → **400**, не 401 (иначе клиент разлогинит).
+- Spring Boot 4 / Jackson 3: пакет `tools.jackson.*` (не путать с `com.fasterxml` вслепую).
+- Тесты: интеграционные через Testcontainers + RestAssured (`BaseIntegrationTest`).

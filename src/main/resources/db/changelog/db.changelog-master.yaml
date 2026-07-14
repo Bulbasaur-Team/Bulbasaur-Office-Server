@@ -23,3 +23,6 @@ databaseChangeLog:
   - include:
       file: changes/008-create-event-log.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/009-create-office-metrics.yaml
+      relativeToChangelogFile: true

@@ -1,0 +1,37 @@
+databaseChangeLog:
+  - changeSet:
+      id: 9-create-office-metrics
+      author: bulba
+      changes:
+        - createTable:
+            tableName: office_metrics
+            columns:
+              - column:
+                  name: bucket_start
+                  type: timestamp with time zone
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: online_count
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tennis_kicks
+                  type: int
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: volleyball_kicks
+                  type: int
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: coffee_cups
+                  type: int
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false

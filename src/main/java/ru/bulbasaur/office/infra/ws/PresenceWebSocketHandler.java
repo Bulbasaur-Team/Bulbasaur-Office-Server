@@ -52,6 +52,7 @@ import ru.bulbasaur.office.usecase.AchievementService;
 import ru.bulbasaur.office.usecase.RecordPokerVotingUsecase;
 import ru.bulbasaur.office.usecase.dto.PokerVotingResult;
 import ru.bulbasaur.office.usecase.dto.RecordPokerVotingCommand;
+import ru.bulbasaur.office.usecase.port.out.LiveMetricsPort;
 
 import org.springframework.scheduling.annotation.Scheduled;
 
@@ -76,6 +77,7 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
     private final PokerRegistry pokerRegistry;
     private final RecordPokerVotingUsecase recordPokerVoting;
     private final AchievementService achievements;
+    private final LiveMetricsPort liveMetrics;
     private final JsonMapper jsonMapper;
 
     // Локация и предмет, за удар по которому выдаётся ачивка «Волейболист».
@@ -213,6 +215,7 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
             send(session, out);
             broadcast(state.locationId(), session.getId(), out);
             grantKickAchievements(state, msg.itemId());
+            recordKickMetric(msg.itemId());
         }
     }
 
@@ -225,6 +228,17 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
         }
         if (itemId.startsWith(TENNIS_ITEM_PREFIX)) {
             achievements.grant(state.playerId(), Achievement.TENNIS);
+        }
+    }
+
+    private void recordKickMetric(String itemId) {
+        if (itemId == null) {
+            return;
+        }
+        if (itemId.startsWith(TENNIS_ITEM_PREFIX)) {
+            liveMetrics.recordTennisKick();
+        } else if (itemId.startsWith(VOLLEYBALL_ITEM_PREFIX)) {
+            liveMetrics.recordVolleyballKick();
         }
     }
 
@@ -254,8 +268,12 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
             return;
         }
         state.hold(msg.itemId(), msg.itemType());
-        if (placedItemRegistry.remove(state.locationId(), msg.itemId())) {
+        // Со стола — pickup; иначе свежая чашка с кухни (itemType coffee) идёт в метрики.
+        boolean fromTable = placedItemRegistry.remove(state.locationId(), msg.itemId());
+        if (fromTable) {
             broadcast(state.locationId(), session.getId(), ItemRemovedOut.of(msg.itemId()));
+        } else if ("coffee".equals(msg.itemType()) && msg.itemId().startsWith("coffee")) {
+            liveMetrics.recordCoffeeCup();
         }
         broadcast(state.locationId(), session.getId(),
                 ItemHeldOut.of(session.getId(), msg.itemId(), msg.itemType()));

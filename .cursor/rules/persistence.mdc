@@ -1,0 +1,14 @@
+---
+description: PostgreSQL, Liquibase и JPA-соглашения
+globs: "{**/infra/persistence/**/*.java,**/db/changelog/**}"
+alwaysApply: false
+---
+
+# Persistence
+
+- Схема только через Liquibase YAML (`db/changelog/changes/00N-*.yaml` + include в master).
+- Hibernate `ddl-auto: validate` — не рассчитывать на авто-миграции.
+- Entity → `*JpaRepository` → `*Connector` → port. Enums в БД как **STRING**.
+- PK часто UUID (`gen_random_uuid()`). Каскады от `players` на дочерние таблицы — как в существующих changeset.
+- Лидерборд: native upsert в репозитории; меняя правила скоринга, подумай о data-migration changeset.
+- `open-in-view: false`. JDBC timezone UTC; бизнес-день для WOTD — Москва.
