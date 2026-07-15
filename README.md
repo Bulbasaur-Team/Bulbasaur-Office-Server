@@ -29,7 +29,7 @@
 | GET | `/api/leaderboard/{game}?limit=20` | по токену | — | лидерборд |
 | GET | `/actuator/health` | публичный | — | статус |
 
-`{game}` — код игры: `bulbajump`, `bulbapacker`, `bulbaparking`, `bulbaracing`, `bulbaguess`, `bulbawordle`.
+`{game}` — код игры: `bulbajump`, `bulbapacker`, `bulbaparking`, `bulbaracing`, `bulbacolors`, `bulbaguess`, `bulbawordle`.
 
 Ответ лидерборда:
 ```json
