@@ -48,6 +48,12 @@ public class EventLogService {
                         + " и попал в лидерборд на " + position + " место с результатом " + result(game, value));
     }
 
+    public void gamePlayed(String login, GameId game, long value) {
+        log.append(INFO, "leaderboard-service",
+                "Бульбазавр " + login + " сыграл в игру " + gameTitle(game)
+                        + " с результатом " + result(game, value));
+    }
+
     private static String gameTitle(GameId game) {
         return switch (game) {
             case BULBA_JUMP -> "Bulba Jump";
