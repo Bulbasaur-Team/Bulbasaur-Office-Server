@@ -27,9 +27,9 @@ public interface PlayerJpaRepository extends JpaRepository<PlayerEntity, UUID> {
     @Query("""
             select p.login as login, p.role as role, count(a.id) as owned
             from PlayerEntity p
-            left join AchievementEntity a on a.playerId = p.id
+            left join AchievementEntity a on a.playerId = p.id and a.code not in :secretCodes
             group by p.id, p.login, p.role, p.createdAt
             order by count(a.id) desc, p.createdAt
             """)
-    List<CommunityRowProjection> findCommunityRows();
+    List<CommunityRowProjection> findCommunityRows(@Param("secretCodes") List<String> secretCodes);
 }

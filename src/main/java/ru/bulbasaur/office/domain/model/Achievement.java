@@ -1,5 +1,7 @@
 package ru.bulbasaur.office.domain.model;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -25,16 +27,33 @@ public enum Achievement {
     CHAMPION("champion", "Чемпион", "Попасть на первую строчку лидерборда"),
     DAY_CHAMPION("day_champion", "Чемпион дня", "Занять первое место в режиме «Слово дня»"),
     LOVER("lover", "Любвеобильный", "Отправить эмодзи сердечка в режиме мультиплеера"),
-    TENNIS("tennis", "Теннисист", "Пнуть теннисный мячик в режиме мультиплеера");
+    TENNIS("tennis", "Теннисист", "Пнуть теннисный мячик в режиме мультиплеера"),
+    CHEATER("cheater", "Читер", "Считерить в игре", true),
+    CROUPIER("croupier", "Крупье", "Провести сессию planning poker в роли админа комнаты"),
+    DEMOCRACY("democracy", "Демократия", "Проголосовать в planning poker"),
+    COFFEEMAN("coffeeman", "Кофеман", "Взять чашку кофе"),
+    DESIGNER("designer", "Дизайнер", "Набрать 10 очков в Bulba Colors"),
+    TETRACHROMAT("tetrachromat", "Тетрахромат", "Набрать 15 очков в Bulba Colors"),
+    TRADER("trader", "Трейдер", "Посмотреть графики в комнате мониторинга"),
+    SYSADMIN("sysadmin", "Сисадмин", "Посмотреть логи"),
+    CAREFUL("careful", "Осторожный", "Поменять пароль"),
+    CHAMELEON("chameleon", "Хамелеон", "Сменить роль"),
+    SOCIAL("social", "Социальный", "Посмотреть список игроков");
 
     private final String code;
     private final String title;
     private final String description;
+    private final boolean secret;
 
     Achievement(String code, String title, String description) {
+        this(code, title, description, false);
+    }
+
+    Achievement(String code, String title, String description, boolean secret) {
         this.code = code;
         this.title = title;
         this.description = description;
+        this.secret = secret;
     }
 
     public String code() {
@@ -49,9 +68,24 @@ public enum Achievement {
         return description;
     }
 
+    /** Секретная ачивка видна только владельцу и не входит в счётчик X/Y. */
+    public boolean secret() {
+        return secret;
+    }
+
     /** Имя картинки в папке achievements на клиенте. */
     public String image() {
         return code + ".png";
+    }
+
+    /** Число ачивок, учитываемых в счётчике «Получено X/Y». */
+    public static int publicCount() {
+        return (int) Arrays.stream(values()).filter(a -> !a.secret).count();
+    }
+
+    /** Коды секретных ачивок — для исключения из агрегатов сообщества. */
+    public static List<String> secretCodes() {
+        return Arrays.stream(values()).filter(Achievement::secret).map(Achievement::code).toList();
     }
 
     public static Optional<Achievement> fromCode(String code) {

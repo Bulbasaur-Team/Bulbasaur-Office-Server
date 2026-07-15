@@ -45,11 +45,16 @@ public class AchievementService {
     private static final long TRUCKER_PRO_MILLIS = 4_550;
     private static final long GUARD_WORDS = 10;
     private static final int DISCIPLINE_DAYS = 5;
+    private static final long DESIGNER_SCORE = 10;
+    private static final long TETRACHROMAT_SCORE = 15;
 
     // Событийные ачивки: их условие нельзя вывести из сохранённого состояния, поэтому
     // общий пересчёт их не трогает — они выдаются точечно (удар по мячу, эмодзи, итог дня).
     private static final Set<Achievement> EVENT_DRIVEN = EnumSet.of(
-            Achievement.VOLLEYBALL, Achievement.TENNIS, Achievement.LOVER, Achievement.DAY_CHAMPION);
+            Achievement.VOLLEYBALL, Achievement.TENNIS, Achievement.LOVER, Achievement.DAY_CHAMPION,
+            Achievement.CHEATER, Achievement.CROUPIER, Achievement.DEMOCRACY, Achievement.COFFEEMAN,
+            Achievement.TRADER, Achievement.SYSADMIN, Achievement.CAREFUL, Achievement.CHAMELEON,
+            Achievement.SOCIAL);
 
     private final AchievementRepositoryPort achievements;
     private final AchievementNotifierPort notifier;
@@ -62,25 +67,24 @@ public class AchievementService {
     /**
      * Список ачивок игрока для окна ачивок: признак «получена» и редкость (процент
      * игроков, владеющих ачивкой). Отсортирован от самых распространённых к самым редким.
+     * Секретные ачивки видны только если уже получены.
      */
     public List<AchievementView> list(UUID playerId) {
-        Set<Achievement> owned = achievements.findOwned(playerId);
-        Map<Achievement, Long> owners = achievements.countOwners();
-        long totalPlayers = Math.max(1, players.countPlayers());
-        return Arrays.stream(Achievement.values())
-                .map(a -> new AchievementView(
-                        a.code(), a.title(), a.description(), a.image(), owned.contains(a),
-                        owners.getOrDefault(a, 0L) * 100.0 / totalPlayers))
-                .sorted(Comparator.comparingDouble(AchievementView::percent).reversed())
-                .toList();
+        return list(playerId, false);
     }
 
-    /** То же для чужого игрока по логину — для экрана сообщества. */
+    /** То же для чужого игрока по логину — для экрана сообщества. Секретные не показываются. */
     public List<AchievementView> listByLogin(String login) {
         UUID playerId = players.findByLogin(login)
                 .orElseThrow(() -> new PlayerNotFoundException(login))
                 .id();
-        return list(playerId);
+        return list(playerId, true);
+    }
+
+    /** Число полученных ачивок, учитываемых в счётчике «Получено X/Y». */
+    public int countOwnedPublic(UUID playerId) {
+        Set<Achievement> owned = achievements.findOwned(playerId);
+        return (int) owned.stream().filter(a -> !a.secret()).count();
     }
 
     /**
@@ -135,6 +139,20 @@ public class AchievementService {
         }
     }
 
+    private List<AchievementView> list(UUID playerId, boolean hideSecret) {
+        Set<Achievement> owned = achievements.findOwned(playerId);
+        Map<Achievement, Long> owners = achievements.countOwners();
+        long totalPlayers = Math.max(1, players.countPlayers());
+        return Arrays.stream(Achievement.values())
+                .filter(a -> !hideSecret || !a.secret())
+                .filter(a -> !a.secret() || owned.contains(a))
+                .map(a -> new AchievementView(
+                        a.code(), a.title(), a.description(), a.image(), owned.contains(a),
+                        owners.getOrDefault(a, 0L) * 100.0 / totalPlayers))
+                .sorted(Comparator.comparingDouble(AchievementView::percent).reversed())
+                .toList();
+    }
+
     private boolean isDerivable(Achievement achievement) {
         return !EVENT_DRIVEN.contains(achievement);
     }
@@ -142,7 +160,8 @@ public class AchievementService {
     private boolean isMet(UUID playerId, Achievement achievement) {
         return switch (achievement) {
             case BULBAZAVR -> true; // сам факт существования игрока
-            case VOLLEYBALL, TENNIS, LOVER, DAY_CHAMPION -> false; // только через событие
+            case VOLLEYBALL, TENNIS, LOVER, DAY_CHAMPION, CHEATER, CROUPIER, DEMOCRACY,
+                 COFFEEMAN, TRADER, SYSADMIN, CAREFUL, CHAMELEON, SOCIAL -> false; // только через событие
             case JUMPER -> hasEntry(playerId, GameId.BULBA_JUMP);
             case JUMPER_10K -> reached(playerId, GameId.BULBA_JUMP, JUMPER_SCORE);
             case JUMPER_100K -> reached(playerId, GameId.BULBA_JUMP, GREAT_JUMPER_SCORE);
@@ -157,6 +176,8 @@ public class AchievementService {
                     || wotd.wasEverFirstToSolve(playerId, GameId.BULBA_WORDLE);
             case DISCIPLINE -> hasConsecutiveSolvedDays(playerId, GameId.BULBA_WORDLE, DISCIPLINE_DAYS);
             case CHAMPION -> isFirstInAnyLeaderboard(playerId);
+            case DESIGNER -> reached(playerId, GameId.BULBA_COLORS, DESIGNER_SCORE);
+            case TETRACHROMAT -> reached(playerId, GameId.BULBA_COLORS, TETRACHROMAT_SCORE);
         };
     }
 

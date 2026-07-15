@@ -1,10 +1,12 @@
 package ru.bulbasaur.office.infra.rest;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.bulbasaur.office.infra.rest.dto.LogsResponse;
+import ru.bulbasaur.office.infra.security.AuthPrincipal;
 import ru.bulbasaur.office.usecase.GetLogsUsecase;
 import ru.bulbasaur.office.usecase.dto.LogEvent;
 
@@ -23,8 +25,8 @@ public class LogController {
     private final GetLogsUsecase getLogs;
 
     @GetMapping
-    public LogsResponse logs() {
-        List<String> lines = getLogs.execute().stream().map(LogController::format).toList();
+    public LogsResponse logs(@AuthenticationPrincipal AuthPrincipal player) {
+        List<String> lines = getLogs.execute(player.id()).stream().map(LogController::format).toList();
         return new LogsResponse(lines);
     }
 

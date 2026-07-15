@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import ru.bulbasaur.office.domain.model.Achievement;
 import ru.bulbasaur.office.infra.rest.dto.AchievementResponse;
 import ru.bulbasaur.office.infra.rest.dto.AchievementsResponse;
 import ru.bulbasaur.office.infra.security.AuthPrincipal;
@@ -23,21 +24,22 @@ public class AchievementController {
 
     @GetMapping
     public AchievementsResponse list(@AuthenticationPrincipal AuthPrincipal player) {
-        return toResponse(achievements.list(player.id()));
+        return toResponse(achievements.list(player.id()), achievements.countOwnedPublic(player.id()));
     }
 
     /** Ачивки другого игрока — для экрана сообщества. */
     @GetMapping("/{login}")
     public AchievementsResponse listOf(@PathVariable String login) {
-        return toResponse(achievements.listByLogin(login));
+        List<AchievementView> views = achievements.listByLogin(login);
+        int owned = (int) views.stream().filter(AchievementView::owned).count();
+        return toResponse(views, owned);
     }
 
-    private AchievementsResponse toResponse(List<AchievementView> views) {
+    private AchievementsResponse toResponse(List<AchievementView> views, int owned) {
         List<AchievementResponse> items = views.stream()
                 .map(v -> new AchievementResponse(
                         v.code(), v.title(), v.description(), v.image(), v.owned(), v.percent()))
                 .toList();
-        int owned = (int) items.stream().filter(AchievementResponse::owned).count();
-        return new AchievementsResponse(items, owned, items.size());
+        return new AchievementsResponse(items, owned, Achievement.publicCount());
     }
 }

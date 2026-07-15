@@ -7,8 +7,10 @@ import ru.bulbasaur.office.usecase.GetOfficeMetricsUsecase;
 import ru.bulbasaur.office.usecase.RecordOfficeMetricsTickUsecase;
 import ru.bulbasaur.office.usecase.dto.OfficeMetricsPoint;
 import ru.bulbasaur.office.usecase.port.out.LiveMetricsPort;
+import ru.bulbasaur.office.usecase.port.out.PlayerRepositoryPort;
 
 import java.util.List;
+import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,6 +28,9 @@ class MetricsIntegrationTest extends BaseIntegrationTest {
     @Autowired
     private GetOfficeMetricsUsecase getMetrics;
 
+    @Autowired
+    private PlayerRepositoryPort players;
+
     @Test
     void metricsWithoutToken_isRejected() {
         given()
@@ -36,13 +41,14 @@ class MetricsIntegrationTest extends BaseIntegrationTest {
     @Test
     void metrics_return_dense_series_and_live_bucket() {
         String token = register("metrics-user", "secret123");
+        UUID playerId = players.findByLogin("metrics-user").orElseThrow().id();
 
         liveMetrics.recordTennisKick();
         liveMetrics.recordTennisKick();
         liveMetrics.recordVolleyballKick();
         liveMetrics.recordCoffeeCup();
 
-        List<OfficeMetricsPoint> points = getMetrics.execute();
+        List<OfficeMetricsPoint> points = getMetrics.execute(playerId);
         assertThat(points).isNotEmpty();
         OfficeMetricsPoint current = points.get(points.size() - 1);
         assertThat(current.tennisKicks()).isEqualTo(2);
@@ -51,7 +57,7 @@ class MetricsIntegrationTest extends BaseIntegrationTest {
 
         recordTick.execute();
         // После тика live обнулился — текущий бакет снова пуст, а прошлый записан в БД.
-        List<OfficeMetricsPoint> after = getMetrics.execute();
+        List<OfficeMetricsPoint> after = getMetrics.execute(playerId);
         OfficeMetricsPoint liveNow = after.get(after.size() - 1);
         assertThat(liveNow.tennisKicks()).isZero();
         assertThat(after.stream().mapToInt(OfficeMetricsPoint::tennisKicks).sum()).isEqualTo(2);

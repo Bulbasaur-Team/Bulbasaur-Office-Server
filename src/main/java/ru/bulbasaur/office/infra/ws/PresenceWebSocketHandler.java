@@ -282,6 +282,9 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
         } else if ("coffee".equals(msg.itemType()) && msg.itemId().startsWith("coffee")) {
             liveMetrics.recordCoffeeCup();
         }
+        if ("coffee".equals(msg.itemType())) {
+            achievements.grant(state.playerId(), Achievement.COFFEEMAN);
+        }
         broadcast(state.locationId(), session.getId(),
                 ItemHeldOut.of(session.getId(), msg.itemId(), msg.itemType()));
     }
@@ -431,6 +434,7 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
             return;
         }
         if (room.vote(state.playerId(), msg.value())) {
+            achievements.grant(state.playerId(), Achievement.DEMOCRACY);
             broadcastPokerState(room);
         }
     }
@@ -449,6 +453,9 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
         PokerRoom.FinishedVoting finished = room.finish(state.playerId());
         if (finished == null) {
             return;
+        }
+        if (room.isAdmin(state.playerId())) {
+            achievements.grant(state.playerId(), Achievement.CROUPIER);
         }
         try {
             PokerVotingResult result = recordPokerVoting.execute(

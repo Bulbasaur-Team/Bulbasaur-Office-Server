@@ -2,6 +2,7 @@ package ru.bulbasaur.office.usecase;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import ru.bulbasaur.office.domain.model.Achievement;
 import ru.bulbasaur.office.usecase.dto.LiveMetricsSnapshot;
 import ru.bulbasaur.office.usecase.dto.OfficeMetricsPoint;
 import ru.bulbasaur.office.usecase.port.out.LiveMetricsPort;
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * История метрик за последние 48 часов плотной сеткой 5‑минутных бакетов.
@@ -29,8 +31,14 @@ public class GetOfficeMetricsUsecase {
     private final OfficeMetricsPort metrics;
     private final LiveMetricsPort liveMetrics;
     private final OnlinePlayersPort onlinePlayers;
+    private final AchievementService achievements;
 
-    public List<OfficeMetricsPoint> execute() {
+    public List<OfficeMetricsPoint> execute(UUID playerId) {
+        achievements.grant(playerId, Achievement.TRADER);
+        return loadMetrics();
+    }
+
+    private List<OfficeMetricsPoint> loadMetrics() {
         Instant now = Instant.now();
         Instant currentBucket = RecordOfficeMetricsTickUsecase.floorToBucket(now);
         Instant from = currentBucket.minus(WINDOW);
