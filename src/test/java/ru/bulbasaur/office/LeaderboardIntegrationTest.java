@@ -78,6 +78,32 @@ class LeaderboardIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    void bulbaTanks_keepsBestScore_andOrdersDescending() {
+        String ash = register("ash", "secret123");
+        String misty = register("misty", "secret123");
+
+        submit(ash, "bulbatanks", 5);
+        submit(ash, "bulbatanks", 3);  // хуже — игнорируется
+        submit(ash, "bulbatanks", 9);  // лучше — заменяет
+        submit(misty, "bulbatanks", 8);
+
+        given().header("Authorization", bearer(misty))
+                .when().get("/api/leaderboard/bulbatanks")
+                .then().statusCode(200)
+                .body("entries.size()", equalTo(2))
+                .body("entries[0].login", equalTo("ash"))
+                .body("entries[0].value", equalTo(9))
+                .body("entries[0].rank", equalTo(1))
+                .body("entries[0].you", equalTo(false))
+                .body("entries[1].login", equalTo("misty"))
+                .body("entries[1].value", equalTo(8))
+                .body("entries[1].you", equalTo(true))
+                .body("you.rank", equalTo(2))
+                .body("you.value", equalTo(8))
+                .body("you.you", equalTo(true));
+    }
+
+    @Test
     void bulbaParking_lowerTimeIsBetter() {
         String racer = register("racer", "secret123");
 
