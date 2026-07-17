@@ -9,7 +9,7 @@ alwaysApply: false
 - Префикс `/api/...`, без `/v1`. Успех — тело DTO без envelope; void → `204`.
 - Auth REST: `Authorization: Bearer <jwt>`. WS `/ws?token=` (handshake interceptor).
 - Публично: `/api/auth/**`, `/actuator/health`. CORS из `app.cors.origin`.
-- Игры в path: `GameId` codes — `bulbajump`, `bulbapacker`, `bulbaparking`, `bulbaracing`, `bulbatanks`, `bulbacolors`, `bulbaguess`, `bulbawordle`.
+- Игры в path: `GameId` codes — `bulbajump`, `bulbapacker`, `bulbaparking`, `bulbaracing`, `bulbatanks`, `bulbacolors`, `bulbasurki`, `bulbaguess`, `bulbawordle`.
 - Лидерборд: `{ entries, you }`; семантика best vs accumulate живёт в `GameId` + native upsert — не плоди отдельные write-path.
 - WS: JSON + `type`; broadcast в пределах локации / poker-room. Presence/items — **in-memory**.
 - Календарный день WOTD/day-champion — `Europe/Moscow` (`MoscowDay`), не UTC midnight.

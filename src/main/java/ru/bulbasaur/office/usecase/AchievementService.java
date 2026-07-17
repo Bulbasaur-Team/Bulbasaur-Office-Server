@@ -195,9 +195,11 @@ public class AchievementService {
 
     private boolean isFirstInAnyLeaderboard(UUID playerId) {
         // Обычные лидерборды (лидерборды слова дня сюда не входят).
+        // Смотрим именно первую строку топа: при равных очках betterCount==0 у обоих,
+        // а «первая строчка» — только у того, кто выше по тай-брейку (updatedAt).
         for (GameId game : GameId.values()) {
-            Optional<Long> value = leaderboard.valueOf(playerId, game);
-            if (value.isPresent() && leaderboard.betterCount(game, value.get(), game.direction()) == 0) {
+            List<LeaderboardRow> top = leaderboard.top(game, game.direction(), 1);
+            if (!top.isEmpty() && top.getFirst().playerId().equals(playerId)) {
                 return true;
             }
         }

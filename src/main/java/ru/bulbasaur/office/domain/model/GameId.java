@@ -13,6 +13,7 @@ public enum GameId {
     BULBA_PARKING("bulbaparking", Direction.LOWER_BETTER),     // время, лучший
     BULBA_TANKS("bulbatanks", Direction.HIGHER_BETTER),        // очки, лучший
     BULBA_COLORS("bulbacolors", Direction.HIGHER_BETTER),      // очки, лучший
+    BULBA_SURKI("bulbasurki", Direction.HIGHER_BETTER),        // очки, лучший
     BULBA_GUESS("bulbaguess", Direction.HIGHER_BETTER, true),   // всего угаданных слов — накопительно
     BULBA_WORDLE("bulbawordle", Direction.HIGHER_BETTER, true); // всего угаданных слов — накопительно
 

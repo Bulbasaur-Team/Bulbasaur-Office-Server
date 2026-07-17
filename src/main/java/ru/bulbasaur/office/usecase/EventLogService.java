@@ -62,6 +62,7 @@ public class EventLogService {
             case BULBA_PARKING -> "Bulba Parking";
             case BULBA_TANKS -> "Bulba Tanks";
             case BULBA_COLORS -> "Bulba Colors";
+            case BULBA_SURKI -> "Bulba Surki";
             case BULBA_GUESS -> "Bulba Guess";
             case BULBA_WORDLE -> "Bulba Wordle";
         };
@@ -83,7 +84,7 @@ public class EventLogService {
         return switch (game) {
             case BULBA_PARKING -> String.format(Locale.ROOT, "%.1f с", value / 1000.0);
             case BULBA_GUESS, BULBA_WORDLE -> value + " " + wordsWord(value);
-            case BULBA_JUMP, BULBA_PACKER, BULBA_RACING, BULBA_TANKS, BULBA_COLORS -> value + " " + pointsWord(value);
+            case BULBA_JUMP, BULBA_PACKER, BULBA_RACING, BULBA_TANKS, BULBA_COLORS, BULBA_SURKI -> value + " " + pointsWord(value);
         };
     }
 
