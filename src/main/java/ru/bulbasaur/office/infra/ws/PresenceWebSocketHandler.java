@@ -14,6 +14,7 @@ import ru.bulbasaur.office.domain.model.Role;
 import ru.bulbasaur.office.infra.ws.dto.AirHockeyErrorOut;
 import ru.bulbasaur.office.infra.ws.dto.AirHockeyJoinMessage;
 import ru.bulbasaur.office.infra.ws.dto.AirHockeyPaddleMessage;
+import ru.bulbasaur.office.infra.ws.dto.AirHockeyRematchRespondMessage;
 import ru.bulbasaur.office.infra.ws.dto.ChatMessage;
 import ru.bulbasaur.office.infra.ws.dto.ChatOut;
 import ru.bulbasaur.office.infra.ws.dto.EmoteMessage;
@@ -132,6 +133,9 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
             case "airhockeyJoin" -> onAirHockeyJoin(session, jsonMapper.treeToValue(node, AirHockeyJoinMessage.class));
             case "airhockeyLeave" -> onAirHockeyLeave(session);
             case "airhockeyPaddle" -> onAirHockeyPaddle(session, jsonMapper.treeToValue(node, AirHockeyPaddleMessage.class));
+            case "airhockeyRematchRequest" -> onAirHockeyRematchRequest(session);
+            case "airhockeyRematchCancel" -> onAirHockeyRematchCancel(session);
+            case "airhockeyRematchRespond" -> onAirHockeyRematchRespond(session, jsonMapper.treeToValue(node, AirHockeyRematchRespondMessage.class));
             // "chat" — чат временно отключён: сообщения не обрабатываются и не рассылаются.
             default -> log.debug("неизвестный/отключённый тип WS-сообщения: {}", type);
         }
@@ -604,21 +608,73 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
+    private void onAirHockeyRematchRequest(WebSocketSession session) {
+        PresenceState state = registry.get(session.getId());
+        if (state == null || !state.isPlaced()) {
+            return;
+        }
+        AirHockeyTable table = airHockeyRegistry.table();
+        String error = table.requestRematch(state.playerId());
+        if (error != null) {
+            send(session, AirHockeyErrorOut.of(error));
+            return;
+        }
+        broadcastAirHockeyState(table);
+    }
+
+    private void onAirHockeyRematchCancel(WebSocketSession session) {
+        PresenceState state = registry.get(session.getId());
+        if (state == null || !state.isPlaced()) {
+            return;
+        }
+        AirHockeyTable table = airHockeyRegistry.table();
+        String error = table.cancelRematch(state.playerId());
+        if (error != null) {
+            send(session, AirHockeyErrorOut.of(error));
+            return;
+        }
+        broadcastAirHockeyState(table);
+    }
+
+    private void onAirHockeyRematchRespond(WebSocketSession session, AirHockeyRematchRespondMessage msg) {
+        PresenceState state = registry.get(session.getId());
+        if (state == null || !state.isPlaced()) {
+            return;
+        }
+        AirHockeyTable table = airHockeyRegistry.table();
+        String error = table.respondRematch(state.playerId(), msg.accept());
+        if (error != null) {
+            send(session, AirHockeyErrorOut.of(error));
+            return;
+        }
+        broadcastAirHockeyState(table);
+        if (table.phase() == AirHockeyTable.Phase.PLAYING) {
+            broadcastAll(AirHockeyTable.LOCATION_ID, table.lobbyOut());
+        }
+    }
+
     private void handleAirHockeyLeave(UUID playerId) {
         AirHockeyTable table = airHockeyRegistry.table();
         if (table.seatOf(playerId) == null) {
             return;
         }
         boolean wasPlaying = table.phase() == AirHockeyTable.Phase.PLAYING;
+        boolean wasEnded = table.phase() == AirHockeyTable.Phase.ENDED;
         AirHockeyTable.FinishedMatch finished = table.leave(playerId);
         broadcastAll(AirHockeyTable.LOCATION_ID, table.lobbyOut());
         if (finished != null) {
             logAirHockey(table, finished);
             broadcastAirHockeyState(table);
-            table.resetAfterEnd();
-            broadcastAll(AirHockeyTable.LOCATION_ID, table.lobbyOut());
-        } else if (wasPlaying) {
+            // Оба отключились во время игры — реванш не нужен.
+            if (!table.hasConnectedSeat()) {
+                table.resetAfterEnd();
+                broadcastAll(AirHockeyTable.LOCATION_ID, table.lobbyOut());
+            }
+        } else if (wasPlaying || wasEnded) {
             broadcastAirHockeyState(table);
+            if (table.phase() == AirHockeyTable.Phase.IDLE) {
+                broadcastAll(AirHockeyTable.LOCATION_ID, table.lobbyOut());
+            }
         }
     }
 
@@ -634,7 +690,7 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
         broadcastAirHockeyState(table);
         if (finished != null) {
             logAirHockey(table, finished);
-            table.resetAfterEnd();
+            // Остаёмся в ENDED, чтобы предложить реванш.
             broadcastAll(AirHockeyTable.LOCATION_ID, table.lobbyOut());
         }
     }

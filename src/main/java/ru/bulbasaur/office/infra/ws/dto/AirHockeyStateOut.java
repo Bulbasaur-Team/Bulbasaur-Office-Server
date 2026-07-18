@@ -4,6 +4,7 @@ package ru.bulbasaur.office.infra.ws.dto;
  * Состояние партии аэрохоккея в координатах ВИДА получателя:
  * своя бита всегда внизу поля, чужая — сверху (для синего стол перевёрнут на 180°).
  * Поле {@code 420×700}. Координаты плоские — без вложенных объектов.
+ * {@code rematchBy} — сторона ({@code red}/{@code blue}), предложившая реванш, или null.
  */
 public record AirHockeyStateOut(
         String type,
@@ -25,7 +26,8 @@ public record AirHockeyStateOut(
         boolean redConnected,
         boolean blueConnected,
         String winnerSide,
-        String winnerLogin
+        String winnerLogin,
+        String rematchBy
 ) {
 
     public static AirHockeyStateOut of(
@@ -47,7 +49,8 @@ public record AirHockeyStateOut(
             boolean redConnected,
             boolean blueConnected,
             String winnerSide,
-            String winnerLogin
+            String winnerLogin,
+            String rematchBy
     ) {
         return new AirHockeyStateOut(
                 "airhockeyState",
@@ -64,7 +67,8 @@ public record AirHockeyStateOut(
                 redConnected,
                 blueConnected,
                 winnerSide,
-                winnerLogin
+                winnerLogin,
+                rematchBy
         );
     }
 }
