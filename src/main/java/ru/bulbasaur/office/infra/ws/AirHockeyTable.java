@@ -22,7 +22,7 @@ public class AirHockeyTable {
     public static final double W = 420;
     public static final double H = 700;
 
-    private static final double PADDLE_R = 29.75; // 35 × 0.85
+    private static final double PADDLE_R = 34.2; // 29.75 × 1.15
     private static final double PUCK_R = 22.75; // 18.2 × 1.25
     /**
      * Хитбокс чуть меньше логических радиусов: в спрайтах есть прозрачные края,
@@ -31,7 +31,7 @@ public class AirHockeyTable {
     private static final double CONTACT_SCALE = 0.9;
     private static final double GOAL_HALF = 55;
     private static final double FRICTION = 0.995;
-    private static final double MAX_PUCK_SPEED = 1656; // 1274 × 1.3
+    private static final double MAX_PUCK_SPEED = 1904; // 1656 × 1.15
     private static final double WALL_REST = 0.92;
     private static final double MIN_SERVE = 180;
     private static final long GOAL_FREEZE_MS = 1000L;
@@ -39,11 +39,14 @@ public class AirHockeyTable {
     /** Стартовая доля целевой скорости при мягком вбросе. */
     private static final double SERVE_START_FRAC = 0.12;
 
-    /** Сила удара от скорости биты (px/s). Слабый замах → тихий отскок, сильный → до потолка. */
-    private static final double MIN_HIT_IMPULSE = 28;
-    private static final double MAX_HIT_IMPULSE = 1066;
+    /**
+     * Упругость удара бита–шайба. Импульс считается из относительной скорости
+     * по нормали, поэтому сила удара растёт со скоростью замаха сама собой,
+     * а повторное срабатывание в одном контакте физически невозможно
+     * (после отражения тела уже расходятся).
+     */
+    private static final double HIT_RESTITUTION = 0.88;
     private static final double MAX_PADDLE_SPEED = 1600;
-    private static final double PADDLE_VEL_TRANSFER = 0.22;
     private static final long PADDLE_VEL_STALE_MS = 80;
     /** Шаг прохода биты при CCD — заметно меньше радиуса контакта. */
     private static final double PADDLE_SWEEP_STEP = 4;
@@ -117,10 +120,6 @@ public class AirHockeyTable {
     private long serveRampUntil;
     private double serveTargetVx;
     private double serveTargetVy;
-
-    /** Уже ударили этой битой в текущем контакте — пока шайба не отойдёт, импульс не повторяем. */
-    private boolean redHitLatched;
-    private boolean blueHitLatched;
 
     public synchronized Phase phase() {
         return phase;
@@ -390,7 +389,7 @@ public class AirHockeyTable {
             blueX = ox;
             blueY = oy;
         }
-        collidePaddle(isRed, true);
+        collidePaddle(isRed);
 
         double dx = nx - ox;
         double dy = ny - oy;
@@ -404,7 +403,7 @@ public class AirHockeyTable {
             return;
         }
 
-        // Непрерывный удар: первый момент касания — единственный импульс.
+        // Непрерывный удар: ставим биту в первый момент касания по траектории.
         double tHit = sweptCircleT(ox, oy, nx, ny, puckX, puckY, minDist);
         double fromX = ox;
         double fromY = oy;
@@ -418,10 +417,11 @@ public class AirHockeyTable {
                 blueX = fromX;
                 blueY = fromY;
             }
-            collidePaddle(isRed, true);
+            collidePaddle(isRed);
         }
 
-        // Остальной путь — только раздвигаем, без повторных ударов.
+        // Остаток пути мелкими шагами: физический импульс сработает максимум
+        // один раз (пока vn < 0), дальше — только позиционное разделение.
         double remain = Math.hypot(nx - fromX, ny - fromY);
         int steps = Math.max(1, (int) Math.ceil(remain / PADDLE_SWEEP_STEP));
         for (int i = 1; i <= steps; i++) {
@@ -433,7 +433,7 @@ public class AirHockeyTable {
                 blueX = fromX + (nx - fromX) * t;
                 blueY = fromY + (ny - fromY) * t;
             }
-            collidePaddle(isRed, false);
+            collidePaddle(isRed);
         }
         if (isRed) {
             redX = nx;
@@ -444,7 +444,7 @@ public class AirHockeyTable {
             blueY = ny;
             bluePaddleAt = now;
         }
-        collidePaddle(isRed, false);
+        collidePaddle(isRed);
     }
 
     /**
@@ -515,8 +515,8 @@ public class AirHockeyTable {
             if (awaitingServeAfterGoal || nowMillis < goalFreezeUntil) {
                 break;
             }
-            collidePaddle(true, true);
-            collidePaddle(false, true);
+            collidePaddle(true);
+            collidePaddle(false);
         }
         if (!awaitingServeAfterGoal
                 && (redScore >= SCORE_TO_WIN || blueScore >= SCORE_TO_WIN)) {
@@ -606,8 +606,6 @@ public class AirHockeyTable {
         goalScorerLogin = null;
         serveRampUntil = 0;
         awaitingServeAfterGoal = false;
-        redHitLatched = false;
-        blueHitLatched = false;
         resetPuckIdle();
     }
 
@@ -642,8 +640,6 @@ public class AirHockeyTable {
         blueVelX = 0;
         blueVelY = 0;
         bluePaddleAt = redPaddleAt;
-        redHitLatched = false;
-        blueHitLatched = false;
         beginSoftServe(ThreadLocalRandom.current().nextBoolean() ? -1 : 1, System.currentTimeMillis());
     }
 
@@ -753,8 +749,6 @@ public class AirHockeyTable {
         resetPuckIdle();
         goalFreezeUntil = nowMillis + GOAL_FREEZE_MS;
         awaitingServeAfterGoal = true;
-        redHitLatched = false;
-        blueHitLatched = false;
         // Пауза не съедает время матча.
         endsAtMillis += GOAL_FREEZE_MS;
     }
@@ -804,11 +798,12 @@ public class AirHockeyTable {
     }
 
     /**
-     * Коллизия бита–шайба.
-     * {@code allowImpulse} — можно ли нанести удар; при проходе биты после первого касания
-     * только раздвигаем тела, иначе шайба «прилипает» и разгоняется повторными импульсами.
+     * Коллизия бита–шайба: позиционное разделение + один физический импульс.
+     * Импульс возникает только при сближении по нормали (vn < 0); сразу после
+     * отражения тела расходятся, поэтому в одном контакте удар не повторится —
+     * без «защёлок» и добивок, из-за которых шайба липла к бите.
      */
-    private void collidePaddle(boolean isRed, boolean allowImpulse) {
+    private void collidePaddle(boolean isRed) {
         Seat seat = isRed ? red : blue;
         if (seat == null || !seat.connected()) {
             return;
@@ -821,17 +816,7 @@ public class AirHockeyTable {
         double dx = puckX - px;
         double dy = puckY - py;
         double minDist = (PADDLE_R + PUCK_R) * CONTACT_SCALE;
-        double clearDist = minDist + 3;
         double dist = Math.hypot(dx, dy);
-
-        // Контакт закончился — следующий удар снова разрешён.
-        if (dist >= clearDist) {
-            if (isRed) {
-                redHitLatched = false;
-            } else {
-                blueHitLatched = false;
-            }
-        }
         if (dist >= minDist) {
             return;
         }
@@ -846,51 +831,21 @@ public class AirHockeyTable {
             ny = dy / dist;
         }
 
-        // Только позиционное разделение — без подтягивания скорости «впереди биты».
+        // Раздвигаем тела, чтобы не тонули друг в друге.
         puckX = px + nx * minDist;
         puckY = py + ny * minDist;
         puckX = clamp(puckX, PUCK_R, W - PUCK_R);
         puckY = clamp(puckY, PUCK_R, H - PUCK_R);
 
-        boolean latched = isRed ? redHitLatched : blueHitLatched;
-        if (!allowImpulse || latched) {
-            return;
+        // Скорость сближения по нормали (бита — «бесконечная масса»).
+        double vn = (puckVx - pvx) * nx + (puckVy - pvy) * ny;
+        if (vn >= 0) {
+            return; // уже расходимся — удар в этом контакте состоялся
         }
-
-        double paddleSpeed = Math.hypot(pvx, pvy);
-        double relVx = puckVx - pvx;
-        double relVy = puckVy - pvy;
-        double vn = relVx * nx + relVy * ny;
-        // Бита не врезается в шайбу — касание боком/уже отскок, импульс не нужен.
-        double closing = -vn;
-        double paddleInto = pvx * nx + pvy * ny;
-        if (closing < 8 && paddleInto < 8) {
-            return;
-        }
-
-        double speedT = clamp(paddleSpeed / MAX_PADDLE_SPEED, 0, 1);
-        double impulse = MIN_HIT_IMPULSE + (MAX_HIT_IMPULSE - MIN_HIT_IMPULSE) * speedT * speedT;
-
-        if (vn < 0) {
-            double rest = 0.35 + 0.55 * speedT;
-            puckVx -= (1.0 + rest) * vn * nx;
-            puckVy -= (1.0 + rest) * vn * ny;
-        }
-        puckVx += pvx * PADDLE_VEL_TRANSFER * (0.4 + 0.6 * speedT);
-        puckVy += pvy * PADDLE_VEL_TRANSFER * (0.4 + 0.6 * speedT);
-
-        double along = puckVx * nx + puckVy * ny;
-        if (along < impulse) {
-            puckVx += nx * (impulse - along);
-            puckVy += ny * (impulse - along);
-        }
+        double j = -(1.0 + HIT_RESTITUTION) * vn;
+        puckVx += j * nx;
+        puckVy += j * ny;
         clampPuckSpeed();
-
-        if (isRed) {
-            redHitLatched = true;
-        } else {
-            blueHitLatched = true;
-        }
     }
 
     private void updatePaddleVel(boolean isRed, double nx, double ny, long now) {

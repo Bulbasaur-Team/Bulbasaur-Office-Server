@@ -49,6 +49,7 @@ import ru.bulbasaur.office.infra.ws.dto.PokerJoinMessage;
 import ru.bulbasaur.office.infra.ws.dto.PokerRoomsOut;
 import ru.bulbasaur.office.infra.ws.dto.PokerTaskMessage;
 import ru.bulbasaur.office.infra.ws.dto.PokerVoteMessage;
+import ru.bulbasaur.office.infra.ws.dto.PongOut;
 import ru.bulbasaur.office.infra.ws.dto.ProjectorIndexMessage;
 import ru.bulbasaur.office.infra.ws.dto.ProjectorOnMessage;
 import ru.bulbasaur.office.infra.ws.dto.ProjectorStateOut;
@@ -109,6 +110,7 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
         JsonNode node = jsonMapper.readTree(message.getPayload());
         String type = node.path("type").asString();
         switch (type) {
+            case "ping" -> send(session, PongOut.of(node.path("t").asLong()));
             case "join" -> onJoin(session, jsonMapper.treeToValue(node, JoinMessage.class));
             case "move" -> onMove(session, jsonMapper.treeToValue(node, MoveMessage.class));
             case "room" -> onRoom(session, jsonMapper.treeToValue(node, RoomMessage.class));
