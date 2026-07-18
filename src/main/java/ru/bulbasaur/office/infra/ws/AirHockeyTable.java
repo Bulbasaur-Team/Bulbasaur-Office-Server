@@ -22,14 +22,14 @@ public class AirHockeyTable {
     public static final double W = 420;
     public static final double H = 700;
 
-    private static final double PADDLE_R = 34.2; // 29.75 × 1.15
-    private static final double PUCK_R = 22.75; // 18.2 × 1.25
+    private static final double PADDLE_R = 37.6; // 34.2 × 1.1
+    private static final double PUCK_R = 25; // 22.75 × 1.1
     /**
      * Хитбокс чуть меньше логических радиусов: в спрайтах есть прозрачные края,
      * иначе удар срабатывает до видимого касания.
      */
     private static final double CONTACT_SCALE = 0.9;
-    private static final double GOAL_HALF = 55;
+    private static final double GOAL_HALF = 60.5; // 55 × 1.1
     private static final double FRICTION = 0.995;
     private static final double MAX_PUCK_SPEED = 1904; // 1656 × 1.15
     private static final double WALL_REST = 0.92;
