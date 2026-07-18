@@ -11,6 +11,9 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import ru.bulbasaur.office.domain.model.Emote;
 import ru.bulbasaur.office.domain.model.Role;
+import ru.bulbasaur.office.infra.ws.dto.AirHockeyErrorOut;
+import ru.bulbasaur.office.infra.ws.dto.AirHockeyJoinMessage;
+import ru.bulbasaur.office.infra.ws.dto.AirHockeyPaddleMessage;
 import ru.bulbasaur.office.infra.ws.dto.ChatMessage;
 import ru.bulbasaur.office.infra.ws.dto.ChatOut;
 import ru.bulbasaur.office.infra.ws.dto.EmoteMessage;
@@ -52,6 +55,7 @@ import ru.bulbasaur.office.infra.ws.dto.RoomMessage;
 import ru.bulbasaur.office.infra.ws.dto.SnapshotOut;
 import ru.bulbasaur.office.domain.model.Achievement;
 import ru.bulbasaur.office.usecase.AchievementService;
+import ru.bulbasaur.office.usecase.EventLogService;
 import ru.bulbasaur.office.usecase.RecordPokerVotingUsecase;
 import ru.bulbasaur.office.usecase.dto.PokerVotingResult;
 import ru.bulbasaur.office.usecase.dto.RecordPokerVotingCommand;
@@ -79,8 +83,10 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
     private final PlacedItemRegistry placedItemRegistry;
     private final PokerRegistry pokerRegistry;
     private final ProjectorRegistry projectorRegistry;
+    private final AirHockeyRegistry airHockeyRegistry;
     private final RecordPokerVotingUsecase recordPokerVoting;
     private final AchievementService achievements;
+    private final EventLogService eventLog;
     private final LiveMetricsPort liveMetrics;
     private final JsonMapper jsonMapper;
 
@@ -123,6 +129,9 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
             case "projectorOn" -> onProjectorOn(session, jsonMapper.treeToValue(node, ProjectorOnMessage.class));
             case "projectorOff" -> onProjectorOff(session);
             case "projectorIndex" -> onProjectorIndex(session, jsonMapper.treeToValue(node, ProjectorIndexMessage.class));
+            case "airhockeyJoin" -> onAirHockeyJoin(session, jsonMapper.treeToValue(node, AirHockeyJoinMessage.class));
+            case "airhockeyLeave" -> onAirHockeyLeave(session);
+            case "airhockeyPaddle" -> onAirHockeyPaddle(session, jsonMapper.treeToValue(node, AirHockeyPaddleMessage.class));
             // "chat" — чат временно отключён: сообщения не обрабатываются и не рассылаются.
             default -> log.debug("неизвестный/отключённый тип WS-сообщения: {}", type);
         }
@@ -145,6 +154,7 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
             if (room != null && room.leave(removed.playerId())) {
                 broadcastPokerState(room);
             }
+            handleAirHockeyLeave(removed.playerId());
         }
     }
 
@@ -170,12 +180,20 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
     }
 
     private void onRoom(WebSocketSession session, RoomMessage msg) {
+        PresenceState before = registry.get(session.getId());
+        UUID playerId = before != null ? before.playerId() : null;
         String previous = registry.changeRoom(session.getId(), msg.locationId(), msg.x(), msg.y(), msg.facing());
         if (previous != null && !previous.equals(msg.locationId())) {
             broadcast(previous, session.getId(), LeftOut.of(session.getId()));
+            if (playerId != null && AirHockeyTable.LOCATION_ID.equals(previous)) {
+                handleAirHockeyLeave(playerId);
+            }
         }
         sendSnapshot(session, msg.locationId());
         broadcast(msg.locationId(), session.getId(), JoinedOut.of(stateOf(registry.get(session.getId()))));
+        if (AirHockeyTable.LOCATION_ID.equals(msg.locationId())) {
+            send(session, airHockeyRegistry.table().lobbyOut());
+        }
     }
 
     private void onChat(WebSocketSession session, ChatMessage msg) {
@@ -539,6 +557,112 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
         broadcastAll(state.locationId(), projectorRegistry.snapshot(state.locationId()));
     }
 
+    private void onAirHockeyJoin(WebSocketSession session, AirHockeyJoinMessage msg) {
+        PresenceState state = registry.get(session.getId());
+        if (state == null || !state.isPlaced()) {
+            return;
+        }
+        if (!AirHockeyTable.LOCATION_ID.equals(state.locationId())) {
+            send(session, AirHockeyErrorOut.of("Аэрохоккей только в чилл-зоне."));
+            return;
+        }
+        AirHockeySide side = AirHockeySide.from(msg.side()).orElse(null);
+        if (side == null) {
+            send(session, AirHockeyErrorOut.of("Неизвестная сторона стола."));
+            return;
+        }
+        AirHockeyTable table = airHockeyRegistry.table();
+        String error = table.join(side, state.playerId(), state.login(), session);
+        if (error != null) {
+            send(session, AirHockeyErrorOut.of(error));
+            return;
+        }
+        broadcastAll(AirHockeyTable.LOCATION_ID, table.lobbyOut());
+        if (table.phase() == AirHockeyTable.Phase.PLAYING) {
+            broadcastAirHockeyState(table);
+        }
+    }
+
+    private void onAirHockeyLeave(WebSocketSession session) {
+        PresenceState state = registry.get(session.getId());
+        if (state == null) {
+            return;
+        }
+        handleAirHockeyLeave(state.playerId());
+    }
+
+    private void onAirHockeyPaddle(WebSocketSession session, AirHockeyPaddleMessage msg) {
+        PresenceState state = registry.get(session.getId());
+        if (state == null || !state.isPlaced()) {
+            return;
+        }
+        AirHockeyTable table = airHockeyRegistry.table();
+        table.setPaddle(state.playerId(), msg.x(), msg.y());
+        // Сразу пушим стейт — не ждём тик физики, иначе чужая бита «прыгает» редко.
+        if (table.phase() == AirHockeyTable.Phase.PLAYING) {
+            broadcastAirHockeyState(table);
+        }
+    }
+
+    private void handleAirHockeyLeave(UUID playerId) {
+        AirHockeyTable table = airHockeyRegistry.table();
+        if (table.seatOf(playerId) == null) {
+            return;
+        }
+        boolean wasPlaying = table.phase() == AirHockeyTable.Phase.PLAYING;
+        AirHockeyTable.FinishedMatch finished = table.leave(playerId);
+        broadcastAll(AirHockeyTable.LOCATION_ID, table.lobbyOut());
+        if (finished != null) {
+            logAirHockey(table, finished);
+            broadcastAirHockeyState(table);
+            table.resetAfterEnd();
+            broadcastAll(AirHockeyTable.LOCATION_ID, table.lobbyOut());
+        } else if (wasPlaying) {
+            broadcastAirHockeyState(table);
+        }
+    }
+
+    /** Физика шайбы ~30 Гц; состояние шлём только участникам партии. */
+    @Scheduled(fixedRate = 33)
+    public void tickAirHockey() {
+        AirHockeyTable table = airHockeyRegistry.table();
+        if (table.phase() != AirHockeyTable.Phase.PLAYING) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        AirHockeyTable.FinishedMatch finished = table.tick(0.033, now);
+        broadcastAirHockeyState(table);
+        if (finished != null) {
+            logAirHockey(table, finished);
+            table.resetAfterEnd();
+            broadcastAll(AirHockeyTable.LOCATION_ID, table.lobbyOut());
+        }
+    }
+
+    private void logAirHockey(AirHockeyTable table, AirHockeyTable.FinishedMatch finished) {
+        if (!table.markLogged()) {
+            return;
+        }
+        eventLog.airHockeyPlayed(
+                finished.redLogin(),
+                finished.blueLogin(),
+                finished.redScore(),
+                finished.blueScore(),
+                finished.winnerLogin());
+    }
+
+    private void broadcastAirHockeyState(AirHockeyTable table) {
+        long now = System.currentTimeMillis();
+        AirHockeyTable.Seat red = table.red();
+        AirHockeyTable.Seat blue = table.blue();
+        if (red != null && red.connected()) {
+            send(red.session(), table.stateFor(red.playerId(), now));
+        }
+        if (blue != null && blue.connected()) {
+            send(blue.session(), table.stateFor(blue.playerId(), now));
+        }
+    }
+
     private void sendSnapshot(WebSocketSession session, String locationId) {
         List<PlayerState> others = registry.othersInRoom(locationId, session.getId()).stream()
                 .map(this::stateOf)
@@ -552,6 +676,9 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
         // которые кто-то успел забрать со столов, пока его в комнате не было.
         send(session, PlacedItemsOut.of(placedItemRegistry.snapshot(locationId)));
         send(session, projectorRegistry.snapshot(locationId));
+        if (AirHockeyTable.LOCATION_ID.equals(locationId)) {
+            send(session, airHockeyRegistry.table().lobbyOut());
+        }
     }
 
     /** Рассылка всем в локации, включая отправителя (общее состояние объекта комнаты). */

@@ -54,6 +54,20 @@ public class EventLogService {
                         + " с результатом " + result(game, value));
     }
 
+    /** Партия аэрохоккея: счёт в пользу победителя или ничья. */
+    public void airHockeyPlayed(String redLogin, String blueLogin, int redScore, int blueScore, String winnerLogin) {
+        String score = redScore + ":" + blueScore;
+        String outcome;
+        if (winnerLogin == null || winnerLogin.isBlank()) {
+            outcome = "ничья";
+        } else {
+            outcome = "в пользу " + winnerLogin;
+        }
+        log.append(INFO, "airhockey-service",
+                "Бульбазавры " + redLogin + " и " + blueLogin
+                        + " сыграли в аэрохоккей, счёт " + score + " " + outcome);
+    }
+
     private static String gameTitle(GameId game) {
         return switch (game) {
             case BULBA_JUMP -> "Bulba Jump";
