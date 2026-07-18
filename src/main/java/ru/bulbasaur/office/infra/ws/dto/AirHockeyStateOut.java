@@ -5,6 +5,7 @@ package ru.bulbasaur.office.infra.ws.dto;
  * своя бита всегда внизу поля, чужая — сверху (для синего стол перевёрнут на 180°).
  * Поле {@code 420×700}. Координаты плоские — без вложенных объектов.
  * {@code rematchBy} — сторона ({@code red}/{@code blue}), предложившая реванш, или null.
+ * {@code goalFreezeMs}/{@code goalScorerLogin} — пауза и автор гола после взятия ворот.
  */
 public record AirHockeyStateOut(
         String type,
@@ -27,7 +28,9 @@ public record AirHockeyStateOut(
         boolean blueConnected,
         String winnerSide,
         String winnerLogin,
-        String rematchBy
+        String rematchBy,
+        long goalFreezeMs,
+        String goalScorerLogin
 ) {
 
     public static AirHockeyStateOut of(
@@ -50,7 +53,9 @@ public record AirHockeyStateOut(
             boolean blueConnected,
             String winnerSide,
             String winnerLogin,
-            String rematchBy
+            String rematchBy,
+            long goalFreezeMs,
+            String goalScorerLogin
     ) {
         return new AirHockeyStateOut(
                 "airhockeyState",
@@ -68,7 +73,9 @@ public record AirHockeyStateOut(
                 blueConnected,
                 winnerSide,
                 winnerLogin,
-                rematchBy
+                rematchBy,
+                goalFreezeMs,
+                goalScorerLogin
         );
     }
 }
