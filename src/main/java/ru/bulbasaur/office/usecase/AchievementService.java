@@ -47,12 +47,14 @@ public class AchievementService {
     private static final int DISCIPLINE_DAYS = 5;
     private static final long DESIGNER_SCORE = 10;
     private static final long TETRACHROMAT_SCORE = 15;
+    private static final long SURKI_TAMER_SCORE = 20;
 
     // Событийные ачивки: их условие нельзя вывести из сохранённого состояния, поэтому
     // общий пересчёт их не трогает — они выдаются точечно (удар по мячу, эмодзи, итог дня).
     private static final Set<Achievement> EVENT_DRIVEN = EnumSet.of(
             Achievement.VOLLEYBALL, Achievement.TENNIS, Achievement.LOVER, Achievement.DAY_CHAMPION,
             Achievement.CHEATER, Achievement.CROUPIER, Achievement.DEMOCRACY, Achievement.COFFEEMAN,
+            Achievement.HOCKEY, Achievement.OVECHKIN, Achievement.SPEAKER,
             Achievement.TRADER, Achievement.SYSADMIN, Achievement.CAREFUL, Achievement.CHAMELEON,
             Achievement.SOCIAL);
 
@@ -161,7 +163,8 @@ public class AchievementService {
         return switch (achievement) {
             case BULBAZAVR -> true; // сам факт существования игрока
             case VOLLEYBALL, TENNIS, LOVER, DAY_CHAMPION, CHEATER, CROUPIER, DEMOCRACY,
-                 COFFEEMAN, TRADER, SYSADMIN, CAREFUL, CHAMELEON, SOCIAL -> false; // только через событие
+                 COFFEEMAN, HOCKEY, OVECHKIN, SPEAKER, TRADER, SYSADMIN, CAREFUL, CHAMELEON, SOCIAL
+                    -> false; // только через событие
             case JUMPER -> hasEntry(playerId, GameId.BULBA_JUMP);
             case JUMPER_10K -> reached(playerId, GameId.BULBA_JUMP, JUMPER_SCORE);
             case JUMPER_100K -> reached(playerId, GameId.BULBA_JUMP, GREAT_JUMPER_SCORE);
@@ -178,6 +181,8 @@ public class AchievementService {
             case CHAMPION -> isFirstInAnyLeaderboard(playerId);
             case DESIGNER -> reached(playerId, GameId.BULBA_COLORS, DESIGNER_SCORE);
             case TETRACHROMAT -> reached(playerId, GameId.BULBA_COLORS, TETRACHROMAT_SCORE);
+            case HAMMER -> hasEntry(playerId, GameId.BULBA_SURKI);
+            case DADATA -> reached(playerId, GameId.BULBA_SURKI, SURKI_TAMER_SCORE);
         };
     }
 

@@ -538,6 +538,7 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
         if (!projectorRegistry.turnOn(state.locationId(), msg.ownerId())) {
             return;
         }
+        achievements.grant(state.playerId(), Achievement.SPEAKER);
         broadcastAll(state.locationId(), projectorRegistry.snapshot(state.locationId()));
     }
 
@@ -585,6 +586,7 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
         }
         broadcastAll(AirHockeyTable.LOCATION_ID, table.lobbyOut());
         if (table.phase() == AirHockeyTable.Phase.PLAYING) {
+            grantHockeyPlayed(table);
             broadcastAirHockeyState(table);
         }
     }
@@ -651,6 +653,7 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
         }
         broadcastAirHockeyState(table);
         if (table.phase() == AirHockeyTable.Phase.PLAYING) {
+            grantHockeyPlayed(table);
             broadcastAll(AirHockeyTable.LOCATION_ID, table.lobbyOut());
         }
     }
@@ -707,6 +710,31 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
                 finished.redScore(),
                 finished.blueScore(),
                 finished.winnerLogin());
+        grantHockeyWin(table, finished.winnerLogin());
+    }
+
+    private void grantHockeyPlayed(AirHockeyTable table) {
+        AirHockeyTable.Seat red = table.red();
+        AirHockeyTable.Seat blue = table.blue();
+        if (red != null) {
+            achievements.grant(red.playerId(), Achievement.HOCKEY);
+        }
+        if (blue != null) {
+            achievements.grant(blue.playerId(), Achievement.HOCKEY);
+        }
+    }
+
+    private void grantHockeyWin(AirHockeyTable table, String winnerLogin) {
+        if (winnerLogin == null) {
+            return;
+        }
+        AirHockeyTable.Seat red = table.red();
+        AirHockeyTable.Seat blue = table.blue();
+        if (red != null && winnerLogin.equals(red.login())) {
+            achievements.grant(red.playerId(), Achievement.OVECHKIN);
+        } else if (blue != null && winnerLogin.equals(blue.login())) {
+            achievements.grant(blue.playerId(), Achievement.OVECHKIN);
+        }
     }
 
     private void broadcastAirHockeyState(AirHockeyTable table) {
