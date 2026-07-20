@@ -1,28 +1,21 @@
 package ru.bulbasaur.office.infra.ws.dto;
 
+import java.util.List;
+
 /**
- * Кто ждёт у стола аэрохоккея в локации. Рассылается всей комнате, чтобы
+ * Кто ждёт у столов аэрохоккея в локации. Рассылается всей комнате, чтобы
  * над персонажами показывать облачко «Сыграем в аэрохоккей?».
+ * Несколько пар могут ждать одновременно — в {@code waiting} все ожидающие.
  */
 public record AirHockeyLobbyOut(
         String type,
-        String redSessionId,
-        String redLogin,
-        String blueSessionId,
-        String blueLogin,
-        String phase
+        List<WaitingSeat> waiting
 ) {
 
-    public static AirHockeyLobbyOut of(
-            String redSessionId, String redLogin,
-            String blueSessionId, String blueLogin,
-            String phase
-    ) {
-        return new AirHockeyLobbyOut(
-                "airhockeyLobby",
-                redSessionId, redLogin,
-                blueSessionId, blueLogin,
-                phase
-        );
+    public record WaitingSeat(String side, String sessionId, String login) {
+    }
+
+    public static AirHockeyLobbyOut of(List<WaitingSeat> waiting) {
+        return new AirHockeyLobbyOut("airhockeyLobby", List.copyOf(waiting));
     }
 }

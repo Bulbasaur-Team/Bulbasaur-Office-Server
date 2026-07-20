@@ -197,9 +197,6 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
         }
         sendSnapshot(session, msg.locationId());
         broadcast(msg.locationId(), session.getId(), JoinedOut.of(stateOf(registry.get(session.getId()))));
-        if (AirHockeyTable.LOCATION_ID.equals(msg.locationId())) {
-            send(session, airHockeyRegistry.table().lobbyOut());
-        }
     }
 
     private void onChat(WebSocketSession session, ChatMessage msg) {
@@ -578,13 +575,14 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
             send(session, AirHockeyErrorOut.of("Неизвестная сторона стола."));
             return;
         }
-        AirHockeyTable table = airHockeyRegistry.table();
-        String error = table.join(side, state.playerId(), state.login(), session);
-        if (error != null) {
-            send(session, AirHockeyErrorOut.of(error));
+        String[] errorOut = new String[1];
+        AirHockeyTable table = airHockeyRegistry.join(
+                side, state.playerId(), state.login(), session, errorOut);
+        if (table == null) {
+            send(session, AirHockeyErrorOut.of(errorOut[0] != null ? errorOut[0] : "Не удалось сесть за стол."));
             return;
         }
-        broadcastAll(AirHockeyTable.LOCATION_ID, table.lobbyOut());
+        broadcastAirHockeyLobby();
         if (table.phase() == AirHockeyTable.Phase.PLAYING) {
             grantHockeyPlayed(table);
             broadcastAirHockeyState(table);
@@ -604,7 +602,10 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
         if (state == null || !state.isPlaced()) {
             return;
         }
-        AirHockeyTable table = airHockeyRegistry.table();
+        AirHockeyTable table = airHockeyRegistry.tableOf(state.playerId());
+        if (table == null) {
+            return;
+        }
         table.setPaddle(state.playerId(), msg.x(), msg.y());
         // Сразу пушим стейт — не ждём тик физики, иначе чужая бита «прыгает» редко.
         if (table.phase() == AirHockeyTable.Phase.PLAYING) {
@@ -617,7 +618,10 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
         if (state == null || !state.isPlaced()) {
             return;
         }
-        AirHockeyTable table = airHockeyRegistry.table();
+        AirHockeyTable table = airHockeyRegistry.tableOf(state.playerId());
+        if (table == null) {
+            return;
+        }
         String error = table.requestRematch(state.playerId());
         if (error != null) {
             send(session, AirHockeyErrorOut.of(error));
@@ -631,7 +635,10 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
         if (state == null || !state.isPlaced()) {
             return;
         }
-        AirHockeyTable table = airHockeyRegistry.table();
+        AirHockeyTable table = airHockeyRegistry.tableOf(state.playerId());
+        if (table == null) {
+            return;
+        }
         String error = table.cancelRematch(state.playerId());
         if (error != null) {
             send(session, AirHockeyErrorOut.of(error));
@@ -645,7 +652,10 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
         if (state == null || !state.isPlaced()) {
             return;
         }
-        AirHockeyTable table = airHockeyRegistry.table();
+        AirHockeyTable table = airHockeyRegistry.tableOf(state.playerId());
+        if (table == null) {
+            return;
+        }
         String error = table.respondRematch(state.playerId(), msg.accept());
         if (error != null) {
             send(session, AirHockeyErrorOut.of(error));
@@ -654,49 +664,54 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
         broadcastAirHockeyState(table);
         if (table.phase() == AirHockeyTable.Phase.PLAYING) {
             grantHockeyPlayed(table);
-            broadcastAll(AirHockeyTable.LOCATION_ID, table.lobbyOut());
+            broadcastAirHockeyLobby();
         }
     }
 
     private void handleAirHockeyLeave(UUID playerId) {
-        AirHockeyTable table = airHockeyRegistry.table();
-        if (table.seatOf(playerId) == null) {
+        AirHockeyTable table = airHockeyRegistry.tableOf(playerId);
+        if (table == null) {
             return;
         }
         boolean wasPlaying = table.phase() == AirHockeyTable.Phase.PLAYING;
         boolean wasEnded = table.phase() == AirHockeyTable.Phase.ENDED;
         AirHockeyTable.FinishedMatch finished = table.leave(playerId);
-        broadcastAll(AirHockeyTable.LOCATION_ID, table.lobbyOut());
+        broadcastAirHockeyLobby();
         if (finished != null) {
             logAirHockey(table, finished);
             broadcastAirHockeyState(table);
             // Оба отключились во время игры — реванш не нужен.
             if (!table.hasConnectedSeat()) {
                 table.resetAfterEnd();
-                broadcastAll(AirHockeyTable.LOCATION_ID, table.lobbyOut());
+                airHockeyRegistry.removeIfIdle(table);
+                broadcastAirHockeyLobby();
             }
         } else if (wasPlaying || wasEnded) {
             broadcastAirHockeyState(table);
+            airHockeyRegistry.removeIfIdle(table);
             if (table.phase() == AirHockeyTable.Phase.IDLE) {
-                broadcastAll(AirHockeyTable.LOCATION_ID, table.lobbyOut());
+                broadcastAirHockeyLobby();
             }
+        } else {
+            airHockeyRegistry.removeIfIdle(table);
         }
     }
 
-    /** Физика шайбы ~30 Гц; состояние шлём только участникам партии. */
+    /** Физика шайбы ~30 Гц; состояние шлём только участникам каждой партии. */
     @Scheduled(fixedRate = 33)
     public void tickAirHockey() {
-        AirHockeyTable table = airHockeyRegistry.table();
-        if (table.phase() != AirHockeyTable.Phase.PLAYING) {
-            return;
-        }
         long now = System.currentTimeMillis();
-        AirHockeyTable.FinishedMatch finished = table.tick(0.033, now);
-        broadcastAirHockeyState(table);
-        if (finished != null) {
-            logAirHockey(table, finished);
-            // Остаёмся в ENDED, чтобы предложить реванш.
-            broadcastAll(AirHockeyTable.LOCATION_ID, table.lobbyOut());
+        for (AirHockeyTable table : airHockeyRegistry.all()) {
+            if (table.phase() != AirHockeyTable.Phase.PLAYING) {
+                continue;
+            }
+            AirHockeyTable.FinishedMatch finished = table.tick(0.033, now);
+            broadcastAirHockeyState(table);
+            if (finished != null) {
+                logAirHockey(table, finished);
+                // Остаёмся в ENDED, чтобы предложить реванш.
+                broadcastAirHockeyLobby();
+            }
         }
     }
 
@@ -749,6 +764,10 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
+    private void broadcastAirHockeyLobby() {
+        broadcastAll(AirHockeyTable.LOCATION_ID, airHockeyRegistry.lobbyOut());
+    }
+
     private void sendSnapshot(WebSocketSession session, String locationId) {
         List<PlayerState> others = registry.othersInRoom(locationId, session.getId()).stream()
                 .map(this::stateOf)
@@ -763,7 +782,7 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
         send(session, PlacedItemsOut.of(placedItemRegistry.snapshot(locationId)));
         send(session, projectorRegistry.snapshot(locationId));
         if (AirHockeyTable.LOCATION_ID.equals(locationId)) {
-            send(session, airHockeyRegistry.table().lobbyOut());
+            send(session, airHockeyRegistry.lobbyOut());
         }
     }
 

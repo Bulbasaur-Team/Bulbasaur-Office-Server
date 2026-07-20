@@ -1,22 +1,24 @@
 package ru.bulbasaur.office.infra.ws;
 
 import org.springframework.web.socket.WebSocketSession;
-import ru.bulbasaur.office.infra.ws.dto.AirHockeyLobbyOut;
 import ru.bulbasaur.office.infra.ws.dto.AirHockeyStateOut;
 
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Стол аэрохоккея в одной локации. Ждёт двух игроков на разных сторонах, затем
+ * Один стол аэрохоккея (пара игроков). Ждёт двух на разных сторонах, затем
  * крутит физику шайбы на сервере до 10 очков, таймаута или пока оба не уйдут.
- * Поле вертикальное: красный внизу, синий сверху.
+ * Поле вертикальное: красный внизу, синий сверху. Несколько столов живут в
+ * {@link AirHockeyRegistry}.
  */
 public class AirHockeyTable {
 
     public static final String LOCATION_ID = "chill-zone";
     public static final long MATCH_MS = 3 * 60 * 1000L;
     public static final int SCORE_TO_WIN = 10;
+
+    private final String id;
 
     /** Логический размер поля (как на клиенте): узкое × высокое. */
     public static final double W = 420;
@@ -121,12 +123,29 @@ public class AirHockeyTable {
     private double serveTargetVx;
     private double serveTargetVy;
 
+    public AirHockeyTable(String id) {
+        this.id = id;
+    }
+
+    public String id() {
+        return id;
+    }
+
     public synchronized Phase phase() {
         return phase;
     }
 
     public synchronized boolean isIdle() {
         return phase == Phase.IDLE;
+    }
+
+    /** Свободна ли сторона на WAITING-столе (для матчмейкинга). */
+    public synchronized boolean needs(AirHockeySide side) {
+        if (phase != Phase.WAITING) {
+            return false;
+        }
+        Seat current = side == AirHockeySide.RED ? red : blue;
+        return current == null;
     }
 
     public synchronized Seat red() {
@@ -523,20 +542,6 @@ public class AirHockeyTable {
             return finish();
         }
         return null;
-    }
-
-    /** Лобби для облачков: sessionId только пока ждём второго игрока. */
-    public synchronized AirHockeyLobbyOut lobbyOut() {
-        if (phase != Phase.WAITING) {
-            return AirHockeyLobbyOut.of(null, null, null, null, phase.name().toLowerCase());
-        }
-        return AirHockeyLobbyOut.of(
-                red != null ? red.session().getId() : null,
-                red != null ? red.login() : null,
-                blue != null ? blue.session().getId() : null,
-                blue != null ? blue.login() : null,
-                "waiting"
-        );
     }
 
     public synchronized AirHockeyStateOut stateFor(UUID playerId, long nowMillis) {
