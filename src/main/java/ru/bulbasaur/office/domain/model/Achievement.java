@@ -39,6 +39,7 @@ public enum Achievement {
     HOCKEY("hockey", "Хоккеист", "Хотя бы раз сыграть в Bulba Hockey"),
     OVECHKIN("ovechkin", "Овечкин", "Обыграть кого-нибудь в Bulba Hockey"),
     SPEAKER("speaker", "Спикер", "Включить слайды на проекторе"),
+    MEOW("meow", "Мяу", "Поговорить с Бульба Котом"),
     TRADER("trader", "Трейдер", "Посмотреть графики в комнате мониторинга"),
     SYSADMIN("sysadmin", "Сисадмин", "Посмотреть логи"),
     CAREFUL("careful", "Осторожный", "Поменять пароль"),

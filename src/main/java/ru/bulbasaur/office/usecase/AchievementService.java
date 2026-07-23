@@ -54,7 +54,7 @@ public class AchievementService {
     private static final Set<Achievement> EVENT_DRIVEN = EnumSet.of(
             Achievement.VOLLEYBALL, Achievement.TENNIS, Achievement.LOVER, Achievement.DAY_CHAMPION,
             Achievement.CHEATER, Achievement.CROUPIER, Achievement.DEMOCRACY, Achievement.COFFEEMAN,
-            Achievement.HOCKEY, Achievement.OVECHKIN, Achievement.SPEAKER,
+            Achievement.HOCKEY, Achievement.OVECHKIN, Achievement.SPEAKER, Achievement.MEOW,
             Achievement.TRADER, Achievement.SYSADMIN, Achievement.CAREFUL, Achievement.CHAMELEON,
             Achievement.SOCIAL);
 
@@ -163,7 +163,7 @@ public class AchievementService {
         return switch (achievement) {
             case BULBAZAVR -> true; // сам факт существования игрока
             case VOLLEYBALL, TENNIS, LOVER, DAY_CHAMPION, CHEATER, CROUPIER, DEMOCRACY,
-                 COFFEEMAN, HOCKEY, OVECHKIN, SPEAKER, TRADER, SYSADMIN, CAREFUL, CHAMELEON, SOCIAL
+                 COFFEEMAN, HOCKEY, OVECHKIN, SPEAKER, MEOW, TRADER, SYSADMIN, CAREFUL, CHAMELEON, SOCIAL
                     -> false; // только через событие
             case JUMPER -> hasEntry(playerId, GameId.BULBA_JUMP);
             case JUMPER_10K -> reached(playerId, GameId.BULBA_JUMP, JUMPER_SCORE);
