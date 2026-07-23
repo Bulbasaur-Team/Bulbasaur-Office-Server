@@ -87,14 +87,18 @@ public class CatAdviceService {
         if (!owned.contains(Achievement.TRADER)) {
             tips.add("Нет ачивки «Трейдер»? Посмотри графики на мониторах в дата-центре.");
         }
-        if (!owned.contains(Achievement.HAMMER)) {
+        // «Ещё не играл» — по факту записи в лидерборде, не по ачивке
+        // (у Colors ачивка «Дизайнер» за 10 очков, а не за сам факт игры).
+        if (leaderboard.valueOf(playerId, GameId.BULBA_SURKI).isEmpty()) {
             tips.add("Кажется, ты ещё не пробовал Bulba Surki — автомат стоит в чилл-зоне.");
         }
-        if (!owned.contains(Achievement.SHOPAHOLIC)) {
+        if (leaderboard.valueOf(playerId, GameId.BULBA_PACKER).isEmpty()) {
             tips.add("Кажется, ты ещё не играл в Bulba Packer — склад ждёт.");
         }
-        if (!owned.contains(Achievement.DESIGNER)) {
+        if (leaderboard.valueOf(playerId, GameId.BULBA_COLORS).isEmpty()) {
             tips.add("Кажется, ты ещё не играл в Bulba Colors — мольберт в кабинете дизайнера.");
+        } else if (!owned.contains(Achievement.DESIGNER)) {
+            tips.add("В Bulba Colors набери 10 очков у мольберта — будет ачивка «Дизайнер».");
         }
         if (!owned.contains(Achievement.CHAMELEON)) {
             tips.add("Смени роль через меню — получишь ачивку «Хамелеон».");
