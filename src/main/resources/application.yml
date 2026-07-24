@@ -20,7 +20,7 @@ spring:
 app:
   jwt:
     secret: ${APP_JWT_SECRET:change-me-in-production-please-use-a-long-random-value}
-    ttl: ${APP_JWT_TTL:P7D}
+    ttl: ${APP_JWT_TTL:P1D}
   cors:
     origin: ${APP_CORS_ORIGIN:http://localhost:5173}
   wotd:

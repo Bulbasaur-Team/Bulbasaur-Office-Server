@@ -8,6 +8,7 @@ alwaysApply: false
 
 - Префикс `/api/...`, без `/v1`. Успех — тело DTO без envelope; void → `204`.
 - Auth REST: `Authorization: Bearer <jwt>`. WS `/ws?token=` (handshake interceptor).
+- Продление сессии: `POST /api/account/refresh` (нужен живой JWT) → новый `AuthResponse`.
 - Публично: `/api/auth/**`, `/actuator/health`. CORS из `app.cors.origin`.
 - Игры в path: `GameId` codes — `bulbajump`, `bulbapacker`, `bulbaparking`, `bulbaracing`, `bulbatanks`, `bulbacolors`, `bulbasurki`, `bulbaguess`, `bulbawordle`.
 - Аэрохоккей — не в лидерборде: realtime-сессия у стола в `chill-zone` (`airhockeyJoin` / `airhockeyPaddle` / `airhockeyLeave`), лог партии через `EventLogService.airHockeyPlayed`.

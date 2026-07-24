@@ -48,7 +48,7 @@
 | `SPRING_DATASOURCE_USERNAME` | пользователь БД | `bulba`                                  |
 | `SPRING_DATASOURCE_PASSWORD` | пароль БД | `bulba`                                  |
 | `APP_JWT_SECRET` | секрет подписи JWT (мин. 32 символа) | dev-заглушка                             |
-| `APP_JWT_TTL` | срок жизни токена (ISO-8601) | `P7D`                                    |
+| `APP_JWT_TTL` | срок жизни токена (ISO-8601); активная сессия продлевается через `POST /api/account/refresh` | `P1D` |
 | `APP_CORS_ORIGIN` | origin фронта для CORS | `http://localhost:5173`                  |
 
 ## Запуск локально

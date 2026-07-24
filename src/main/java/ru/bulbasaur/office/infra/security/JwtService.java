@@ -29,6 +29,7 @@ public class JwtService implements TokenPort {
     public String issue(UUID playerId, String login) {
         Instant now = Instant.now();
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .subject(playerId.toString())
                 .claim("login", login)
                 .issuedAt(Date.from(now))
