@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - changeSet:
+      id: 11-retro-sticker-sort-order
+      author: bulba
+      changes:
+        - addColumn:
+            tableName: retro_stickers
+            columns:
+              - column:
+                  name: sort_order
+                  type: int
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: >
+              UPDATE retro_stickers s
+              SET sort_order = sub.rn - 1
+              FROM (
+                SELECT id, ROW_NUMBER() OVER (PARTITION BY room_id, board ORDER BY created_at ASC) AS rn
+                FROM retro_stickers
+              ) sub
+              WHERE s.id = sub.id;

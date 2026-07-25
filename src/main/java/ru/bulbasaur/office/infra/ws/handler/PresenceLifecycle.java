@@ -20,6 +20,7 @@ public class PresenceLifecycle {
 
     private final ItemWsHandler items;
     private final PokerWsHandler poker;
+    private final RetroWsHandler retro;
     private final AirHockeyWsHandler airHockey;
     private final CatWsHandler cat;
     private final WsMessenger messenger;
@@ -36,6 +37,7 @@ public class PresenceLifecycle {
         }
         if (removed != null) {
             poker.onPlayerGone(removed.playerId());
+            retro.onPlayerGone(removed.playerId());
             airHockey.handleLeave(removed.playerId());
             cat.clearTalkingAndBroadcast(session.getId());
         }

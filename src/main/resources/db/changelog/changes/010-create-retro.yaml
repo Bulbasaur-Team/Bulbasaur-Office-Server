@@ -1,0 +1,256 @@
+databaseChangeLog:
+  - changeSet:
+      id: 10-create-retro
+      author: bulba
+      changes:
+        - createTable:
+            tableName: retro_rooms
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(60)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: admin_player_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_retro_rooms_admin
+                    references: players(id)
+              - column:
+                  name: status
+                  type: varchar(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: closes_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: closed_at
+                  type: timestamp with time zone
+        - createIndex:
+            tableName: retro_rooms
+            indexName: idx_retro_rooms_status
+            columns:
+              - column:
+                  name: status
+        - createTable:
+            tableName: retro_moods
+            columns:
+              - column:
+                  name: room_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_retro_moods
+                    foreignKeyName: fk_retro_moods_room
+                    references: retro_rooms(id)
+                    deleteCascade: true
+              - column:
+                  name: player_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_retro_moods
+                    foreignKeyName: fk_retro_moods_player
+                    references: players(id)
+                    deleteCascade: true
+              - column:
+                  name: value
+                  type: double precision
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: retro_sticker_groups
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: room_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_retro_sticker_groups_room
+                    references: retro_rooms(id)
+                    deleteCascade: true
+              - column:
+                  name: board
+                  type: varchar(16)
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: retro_stickers
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: room_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_retro_stickers_room
+                    references: retro_rooms(id)
+                    deleteCascade: true
+              - column:
+                  name: board
+                  type: varchar(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: author_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_retro_stickers_author
+                    references: players(id)
+              - column:
+                  name: text
+                  type: varchar(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: group_id
+                  type: uuid
+                  constraints:
+                    foreignKeyName: fk_retro_stickers_group
+                    references: retro_sticker_groups(id)
+                    deleteCascade: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: retro_stickers
+            indexName: idx_retro_stickers_room_board
+            columns:
+              - column:
+                  name: room_id
+              - column:
+                  name: board
+        - createTable:
+            tableName: retro_memes
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: room_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_retro_memes_room
+                    references: retro_rooms(id)
+                    deleteCascade: true
+              - column:
+                  name: author_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_retro_memes_author
+                    references: players(id)
+              - column:
+                  name: mime_type
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: image_data
+                  type: bytea
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: retro_memes
+            indexName: idx_retro_memes_room
+            columns:
+              - column:
+                  name: room_id
+        - createTable:
+            tableName: retro_reactions
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: target_type
+                  type: varchar(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: target_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: player_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_retro_reactions_player
+                    references: players(id)
+                    deleteCascade: true
+              - column:
+                  name: emoji
+                  type: varchar(8)
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: retro_reactions
+            columnNames: target_type, target_id, player_id, emoji
+            constraintName: uq_retro_reactions_once
+        - createIndex:
+            tableName: retro_reactions
+            indexName: idx_retro_reactions_target
+            columns:
+              - column:
+                  name: target_type
+              - column:
+                  name: target_id

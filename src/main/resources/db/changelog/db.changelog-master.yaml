@@ -26,3 +26,9 @@ databaseChangeLog:
   - include:
       file: changes/009-create-office-metrics.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/010-create-retro.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/011-retro-sticker-sort-order.yaml
+      relativeToChangelogFile: true
