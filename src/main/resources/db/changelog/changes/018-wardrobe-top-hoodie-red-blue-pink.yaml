@@ -1,0 +1,28 @@
+databaseChangeLog:
+  - changeSet:
+      id: 018-wardrobe-top-hoodie-red
+      author: bulba
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable)
+              VALUES ('top_hoodie_red', 'TOP', 'Красная толстовка', 8000, 80, true)
+              ON CONFLICT DO NOTHING;
+  - changeSet:
+      id: 018-wardrobe-top-hoodie-blue
+      author: bulba
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable)
+              VALUES ('top_hoodie_blue', 'TOP', 'Синяя толстовка', 8000, 85, true)
+              ON CONFLICT DO NOTHING;
+  - changeSet:
+      id: 018-wardrobe-top-hoodie-pink
+      author: bulba
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable)
+              VALUES ('top_hoodie_pink', 'TOP', 'Розовая толстовка', 8000, 90, true)
+              ON CONFLICT DO NOTHING;

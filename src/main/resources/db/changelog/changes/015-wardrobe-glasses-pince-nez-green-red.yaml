@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: 015-wardrobe-glasses-pince-nez-green
+      author: bulba
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable)
+              VALUES ('glasses_pince_nez_green', 'GLASSES', 'Пенсне зелёное', 3000, 26, true)
+              ON CONFLICT DO NOTHING;
+  - changeSet:
+      id: 015-wardrobe-glasses-pince-nez-red
+      author: bulba
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable)
+              VALUES ('glasses_pince_nez_red', 'GLASSES', 'Пенсне красное', 3000, 27, true)
+              ON CONFLICT DO NOTHING;

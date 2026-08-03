@@ -1,0 +1,37 @@
+databaseChangeLog:
+  - changeSet:
+      id: 016-wardrobe-glasses-orange
+      author: bulba
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable)
+              VALUES ('glasses_orange', 'GLASSES', 'Оранжевые очки', 4000, 40, true)
+              ON CONFLICT DO NOTHING;
+  - changeSet:
+      id: 016-wardrobe-glasses-blue
+      author: bulba
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable)
+              VALUES ('glasses_blue', 'GLASSES', 'Синие очки', 4000, 50, true)
+              ON CONFLICT DO NOTHING;
+  - changeSet:
+      id: 016-wardrobe-glasses-red
+      author: bulba
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable)
+              VALUES ('glasses_red', 'GLASSES', 'Красные очки', 4000, 60, true)
+              ON CONFLICT DO NOTHING;
+  - changeSet:
+      id: 016-wardrobe-glasses-pink
+      author: bulba
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable)
+              VALUES ('glasses_pink', 'GLASSES', 'Розовые очки', 4000, 70, true)
+              ON CONFLICT DO NOTHING;

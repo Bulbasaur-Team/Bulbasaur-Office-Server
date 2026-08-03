@@ -59,7 +59,7 @@ public class SaveWotdProgressUsecase {
                     .map(StoredPlayer::login)
                     .ifPresent(login -> eventLog.wotdSolved(login, game, command.attempts()));
             String gameTitle = game == GameId.BULBA_GUESS ? "Bulba Guess" : "Bulba Wordle";
-            credit.execute(command.playerId(), 200, BulbaCoinKind.WOTD_SOLVE,
+            credit.execute(command.playerId(), 500, BulbaCoinKind.WOTD_SOLVE,
                     "wotd:" + game.code() + ":" + today,
                     "Слово дня пройдено («" + gameTitle + "»)");
         }

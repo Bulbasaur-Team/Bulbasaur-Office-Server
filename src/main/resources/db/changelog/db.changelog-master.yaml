@@ -35,3 +35,30 @@ databaseChangeLog:
   - include:
       file: changes/012-bulba-coins-and-wardrobe.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/013-wardrobe-top-hoodie-purple.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/014-wardrobe-glasses-pince-nez-pink.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/015-wardrobe-glasses-pince-nez-green-red.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/016-wardrobe-glasses-colors.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/017-wardrobe-bottom-red-green-shorts.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/018-wardrobe-top-hoodie-red-blue-pink.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/019-wardrobe-top-hoodie-beige-orange.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/020-wardrobe-bottom-shorts-colors.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/021-halve-wardrobe-prices.yaml
+      relativeToChangelogFile: true

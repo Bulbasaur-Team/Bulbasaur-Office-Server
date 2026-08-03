@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: 019-wardrobe-top-hoodie-beige
+      author: bulba
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable)
+              VALUES ('top_hoodie_beige', 'TOP', 'Бежевая толстовка', 8000, 95, true)
+              ON CONFLICT DO NOTHING;
+  - changeSet:
+      id: 019-wardrobe-top-hoodie-orange
+      author: bulba
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable)
+              VALUES ('top_hoodie_orange', 'TOP', 'Оранжевая толстовка', 8000, 100, true)
+              ON CONFLICT DO NOTHING;

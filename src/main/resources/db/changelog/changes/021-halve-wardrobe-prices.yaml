@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      id: 021-halve-wardrobe-prices
+      author: bulba
+      changes:
+        - sql:
+            sql: >
+              UPDATE wardrobe_items
+              SET price = price / 2
+              WHERE price > 0;

@@ -1,0 +1,37 @@
+databaseChangeLog:
+  - changeSet:
+      id: 020-wardrobe-bottom-blue-shorts
+      author: bulba
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable)
+              VALUES ('bottom_blue_shorts', 'BOTTOM', 'Синие шорты', 3000, 97, true)
+              ON CONFLICT DO NOTHING;
+  - changeSet:
+      id: 020-wardrobe-bottom-orange-shorts
+      author: bulba
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable)
+              VALUES ('bottom_orange_shorts', 'BOTTOM', 'Оранжевые шорты', 3000, 98, true)
+              ON CONFLICT DO NOTHING;
+  - changeSet:
+      id: 020-wardrobe-bottom-pink-shorts
+      author: bulba
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable)
+              VALUES ('bottom_pink_shorts', 'BOTTOM', 'Розовые шорты', 3000, 99, true)
+              ON CONFLICT DO NOTHING;
+  - changeSet:
+      id: 020-wardrobe-bottom-purple-shorts
+      author: bulba
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable)
+              VALUES ('bottom_purple_shorts', 'BOTTOM', 'Фиолетовые шорты', 3000, 101, true)
+              ON CONFLICT DO NOTHING;

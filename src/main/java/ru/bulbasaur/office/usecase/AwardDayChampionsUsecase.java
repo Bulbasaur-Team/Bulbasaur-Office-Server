@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Выдать «Чемпион дня» победителям слова дня за вчера и +200 BC.
+ * Выдать «Чемпион дня» победителям слова дня за вчера и +500 BC.
  */
 @Service
 @RequiredArgsConstructor
@@ -33,7 +33,7 @@ public class AwardDayChampionsUsecase {
                 UUID winnerId = top.get(0).playerId();
                 grant.execute(winnerId, Achievement.DAY_CHAMPION);
                 String gameTitle = game == GameId.BULBA_GUESS ? "Bulba Guess" : "Bulba Wordle";
-                credit.execute(winnerId, 200, BulbaCoinKind.WOTD_CHAMPION,
+                credit.execute(winnerId, 500, BulbaCoinKind.WOTD_CHAMPION,
                         "wotd_champ:" + game.code() + ":" + yesterday,
                         "Лучший результат слова дня («" + gameTitle + "»)");
             }
