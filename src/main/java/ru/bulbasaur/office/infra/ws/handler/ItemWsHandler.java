@@ -24,7 +24,7 @@ import ru.bulbasaur.office.infra.ws.dto.ItemPlacedOut;
 import ru.bulbasaur.office.infra.ws.dto.ItemReleasedOut;
 import ru.bulbasaur.office.infra.ws.dto.ItemRemovedOut;
 import ru.bulbasaur.office.infra.ws.dto.PlacedItemDto;
-import ru.bulbasaur.office.usecase.AchievementService;
+import ru.bulbasaur.office.usecase.GrantAchievementUsecase;
 import ru.bulbasaur.office.usecase.port.out.LiveMetricsPort;
 
 import java.util.List;
@@ -42,7 +42,7 @@ public class ItemWsHandler {
     private final PresenceRegistry registry;
     private final ItemRegistry itemRegistry;
     private final PlacedItemRegistry placedItemRegistry;
-    private final AchievementService achievements;
+    private final GrantAchievementUsecase grantAchievement;
     private final LiveMetricsPort liveMetrics;
     private final WsMessenger messenger;
 
@@ -95,7 +95,7 @@ public class ItemWsHandler {
             liveMetrics.recordCoffeeCup();
         }
         if ("coffee".equals(msg.itemType())) {
-            achievements.grant(state.playerId(), Achievement.COFFEEMAN);
+            grantAchievement.execute(state.playerId(), Achievement.COFFEEMAN);
         }
         messenger.broadcast(state.locationId(), session.getId(),
                 ItemHeldOut.of(session.getId(), msg.itemId(), msg.itemType()));
@@ -165,10 +165,10 @@ public class ItemWsHandler {
             return;
         }
         if (VOLLEYBALL_LOCATION.equals(state.locationId()) && itemId.startsWith(VOLLEYBALL_ITEM_PREFIX)) {
-            achievements.grant(state.playerId(), Achievement.VOLLEYBALL);
+            grantAchievement.execute(state.playerId(), Achievement.VOLLEYBALL);
         }
         if (itemId.startsWith(TENNIS_ITEM_PREFIX)) {
-            achievements.grant(state.playerId(), Achievement.TENNIS);
+            grantAchievement.execute(state.playerId(), Achievement.TENNIS);
         }
     }
 

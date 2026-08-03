@@ -97,7 +97,7 @@ public class PlayerConnector implements PlayerRepositoryPort {
     @Transactional(readOnly = true)
     public List<StoredCommunityPlayer> community() {
         return repository.findCommunityRows(Achievement.secretCodes()).stream()
-                .map(row -> new StoredCommunityPlayer(row.getLogin(), row.getRole(), row.getOwned()))
+                .map(row -> new StoredCommunityPlayer(row.getId(), row.getLogin(), row.getOwned()))
                 .toList();
     }
 }

@@ -2,7 +2,7 @@ package ru.bulbasaur.office.infra.ws;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
-import ru.bulbasaur.office.domain.model.Role;
+import ru.bulbasaur.office.domain.model.PlayerAppearance;
 import ru.bulbasaur.office.usecase.port.out.OnlinePlayersPort;
 
 import java.util.List;
@@ -34,10 +34,11 @@ public class PresenceRegistry implements OnlinePlayersPort {
     }
 
     /** Ставит игрока в локацию с позицией (обработка join). */
-    public void place(String sessionId, Role role, String locationId, double x, double y, boolean facing) {
+    public void place(String sessionId, PlayerAppearance appearance, String locationId,
+                      double x, double y, boolean facing) {
         PresenceState state = sessions.get(sessionId);
         if (state != null) {
-            state.place(role, locationId, x, y, facing);
+            state.place(appearance, locationId, x, y, facing);
         }
     }
 
@@ -55,8 +56,15 @@ public class PresenceRegistry implements OnlinePlayersPort {
             return null;
         }
         String previous = state.locationId();
-        state.place(state.role(), locationId, x, y, facing);
+        state.place(state.appearance(), locationId, x, y, facing);
         return previous;
+    }
+
+    /** Все состояния открытых сессий игрока. */
+    public List<PresenceState> statesOf(UUID playerId) {
+        return sessions.values().stream()
+                .filter(s -> playerId.equals(s.playerId()))
+                .toList();
     }
 
     /** Игроки в указанной локации (уже вошедшие), кроме одной сессии. */

@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
 import ru.bulbasaur.office.domain.model.Achievement;
 import ru.bulbasaur.office.domain.model.Emote;
-import ru.bulbasaur.office.domain.model.Role;
+import ru.bulbasaur.office.domain.model.PlayerAppearance;
 import ru.bulbasaur.office.infra.ws.AirHockeyRegistry;
 import ru.bulbasaur.office.infra.ws.AirHockeyTable;
 import ru.bulbasaur.office.infra.ws.BulbaCatRegistry;
@@ -30,7 +30,8 @@ import ru.bulbasaur.office.infra.ws.dto.PlacedItemsOut;
 import ru.bulbasaur.office.infra.ws.dto.PlayerState;
 import ru.bulbasaur.office.infra.ws.dto.RoomMessage;
 import ru.bulbasaur.office.infra.ws.dto.SnapshotOut;
-import ru.bulbasaur.office.usecase.AchievementService;
+import ru.bulbasaur.office.usecase.GetPlayerAppearanceUsecase;
+import ru.bulbasaur.office.usecase.GrantAchievementUsecase;
 
 import java.util.List;
 import java.util.UUID;
@@ -47,17 +48,22 @@ public class PresenceWsHandler {
     private final ProjectorRegistry projectorRegistry;
     private final AirHockeyRegistry airHockeyRegistry;
     private final BulbaCatRegistry bulbaCatRegistry;
-    private final AchievementService achievements;
+    private final GrantAchievementUsecase grantAchievement;
+    private final GetPlayerAppearanceUsecase getAppearance;
     private final WsMessenger messenger;
     private final PresenceLifecycle lifecycle;
 
     public void onJoin(WebSocketSession session, JoinMessage msg) {
-        Role role = Role.fromName(msg.role()).orElse(null);
-        if (role == null) {
-            log.debug("join с неизвестной ролью: {}", msg.role());
+        PresenceState state = registry.get(session.getId());
+        if (state == null) {
             return;
         }
-        registry.place(session.getId(), role, msg.locationId(), msg.x(), msg.y(), msg.facing());
+        if (msg.locationId() == null || msg.locationId().isBlank()) {
+            log.debug("join без локации");
+            return;
+        }
+        PlayerAppearance appearance = getAppearance.execute(state.playerId());
+        registry.place(session.getId(), appearance, msg.locationId(), msg.x(), msg.y(), msg.facing());
         sendSnapshot(session, msg.locationId());
         messenger.broadcast(msg.locationId(), session.getId(),
                 JoinedOut.of(messenger.stateOf(registry.get(session.getId()))));
@@ -106,7 +112,7 @@ public class PresenceWsHandler {
         }
         messenger.broadcast(state.locationId(), session.getId(), EmoteOut.of(session.getId(), emote.name()));
         if (emote == Emote.HEART) {
-            achievements.grant(state.playerId(), Achievement.LOVER);
+            grantAchievement.execute(state.playerId(), Achievement.LOVER);
         }
     }
 

@@ -3,7 +3,7 @@ package ru.bulbasaur.office.infra.scheduling;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import ru.bulbasaur.office.usecase.AchievementService;
+import ru.bulbasaur.office.usecase.RecheckAchievementsUsecase;
 
 /**
  * Страховочный прогон: раз в 5 минут пересчитывает ачивки всех игроков и выдаёт
@@ -14,10 +14,10 @@ import ru.bulbasaur.office.usecase.AchievementService;
 @RequiredArgsConstructor
 public class AchievementCronJob {
 
-    private final AchievementService achievements;
+    private final RecheckAchievementsUsecase recheckAchievements;
 
     @Scheduled(cron = "0 */5 * * * *")
     public void recheckAll() {
-        achievements.recheckAll();
+        recheckAchievements.executeAll();
     }
 }

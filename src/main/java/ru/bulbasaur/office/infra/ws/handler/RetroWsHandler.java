@@ -89,7 +89,7 @@ public class RetroWsHandler {
             return;
         }
         RetroRoom room = retroRegistry.create(entity, state.login());
-        room.join(state.playerId(), state.login(), state.role().name(), session);
+        room.join(state.playerId(), state.login(), "", session);
         messenger.send(session, stateFor(room, state.playerId()));
     }
 
@@ -104,7 +104,7 @@ public class RetroWsHandler {
             messenger.send(session, roomsOut());
             return;
         }
-        if (!room.join(state.playerId(), state.login(), state.role().name(), session)) {
+        if (!room.join(state.playerId(), state.login(), "", session)) {
             messenger.send(session, RetroErrorOut.of("Комната переполнена."));
             return;
         }

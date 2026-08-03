@@ -17,10 +17,10 @@ public class GetLogsUsecase {
     private static final int LIMIT = 500;
 
     private final EventLogPort log;
-    private final AchievementService achievements;
+    private final GrantAchievementUsecase grantAchievement;
 
     public List<LogEvent> execute(UUID playerId) {
-        achievements.grant(playerId, Achievement.SYSADMIN);
+        grantAchievement.execute(playerId, Achievement.SYSADMIN);
         return log.recent(LIMIT);
     }
 }

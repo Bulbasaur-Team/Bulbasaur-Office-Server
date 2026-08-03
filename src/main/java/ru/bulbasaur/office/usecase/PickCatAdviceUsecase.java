@@ -19,12 +19,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
-/**
- * Советы Бульба Кота: только релевантные подсказки по прогрессу и ачивкам игрока.
- */
+/** Советы Бульба Кота: релевантные подсказки по прогрессу и ачивкам. */
 @Service
 @RequiredArgsConstructor
-public class CatAdviceService {
+public class PickCatAdviceUsecase {
 
     private final AchievementRepositoryPort achievements;
     private final LeaderboardRepositoryPort leaderboard;
@@ -32,7 +30,7 @@ public class CatAdviceService {
     private final DayPort day;
 
     @Transactional(readOnly = true)
-    public String pickAdvice(UUID playerId) {
+    public String execute(UUID playerId) {
         List<String> tips = collectTips(playerId);
         if (tips.isEmpty()) {
             return "Пока советов нет — просто помурчи рядом.";
@@ -54,7 +52,7 @@ public class CatAdviceService {
             }
             LeaderboardRow first = top.getFirst();
             if (playerId.equals(first.playerId())) {
-                continue; // уже первый — «обогнать» неактуально
+                continue;
             }
             tips.add("Смотрю, ты уже играл в " + gameTitle(game)
                     + ". Сейчас на первом месте — " + first.login()
@@ -87,8 +85,6 @@ public class CatAdviceService {
         if (!owned.contains(Achievement.TRADER)) {
             tips.add("Нет ачивки «Трейдер»? Посмотри графики на мониторах в дата-центре.");
         }
-        // «Ещё не играл» — по факту записи в лидерборде, не по ачивке
-        // (у Colors ачивка «Дизайнер» за 10 очков, а не за сам факт игры).
         if (leaderboard.valueOf(playerId, GameId.BULBA_SURKI).isEmpty()) {
             tips.add("Кажется, ты ещё не пробовал Bulba Surki — автомат стоит в чилл-зоне.");
         }
@@ -99,9 +95,6 @@ public class CatAdviceService {
             tips.add("Кажется, ты ещё не играл в Bulba Colors — мольберт в кабинете дизайнера.");
         } else if (!owned.contains(Achievement.DESIGNER)) {
             tips.add("В Bulba Colors набери 10 очков у мольберта — будет ачивка «Дизайнер».");
-        }
-        if (!owned.contains(Achievement.CHAMELEON)) {
-            tips.add("Смени роль через меню — получишь ачивку «Хамелеон».");
         }
         if (!owned.contains(Achievement.LOVER)) {
             tips.add("Жми реакции на панели внизу — за сердечко дают ачивку.");

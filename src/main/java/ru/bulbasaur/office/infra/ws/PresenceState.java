@@ -3,13 +3,13 @@ package ru.bulbasaur.office.infra.ws;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import org.springframework.web.socket.WebSocketSession;
-import ru.bulbasaur.office.domain.model.Role;
+import ru.bulbasaur.office.domain.model.PlayerAppearance;
 
 import java.util.UUID;
 
 /**
  * Присутствие одного подключённого игрока: неизменяемые идентификаторы сессии и
- * изменяемые роль/локация/позиция. Меняемые поля volatile — их читает поток рассылки,
+ * изменяемые внешность/локация/позиция. Меняемые поля volatile — их читает поток рассылки,
  * а пишет поток обработки сообщений этой сессии.
  */
 @Getter
@@ -21,7 +21,7 @@ public class PresenceState {
     private final UUID playerId;
     private final String login;
 
-    private volatile Role role;
+    private volatile PlayerAppearance appearance;
     private volatile String locationId;
     private volatile double x;
     private volatile double y;
@@ -38,12 +38,16 @@ public class PresenceState {
         this.login = login;
     }
 
-    public void place(Role role, String locationId, double x, double y, boolean facing) {
-        this.role = role;
+    public void place(PlayerAppearance appearance, String locationId, double x, double y, boolean facing) {
+        this.appearance = appearance;
         this.locationId = locationId;
         this.x = x;
         this.y = y;
         this.facing = facing;
+    }
+
+    public void setAppearance(PlayerAppearance appearance) {
+        this.appearance = appearance;
     }
 
     public void moveTo(double x, double y, boolean facing) {
@@ -62,8 +66,8 @@ public class PresenceState {
         this.heldItemType = null;
     }
 
-    /** true — игрок уже прислал join и получил роль/локацию (до этого он невидим для остальных). */
+    /** true — игрок уже прислал join и получил локацию (до этого он невидим для остальных). */
     public boolean isPlaced() {
-        return role != null && locationId != null;
+        return appearance != null && locationId != null;
     }
 }

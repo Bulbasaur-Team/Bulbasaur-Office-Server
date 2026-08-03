@@ -17,7 +17,7 @@ import ru.bulbasaur.office.infra.ws.dto.PokerJoinMessage;
 import ru.bulbasaur.office.infra.ws.dto.PokerRoomsOut;
 import ru.bulbasaur.office.infra.ws.dto.PokerTaskMessage;
 import ru.bulbasaur.office.infra.ws.dto.PokerVoteMessage;
-import ru.bulbasaur.office.usecase.AchievementService;
+import ru.bulbasaur.office.usecase.GrantAchievementUsecase;
 import ru.bulbasaur.office.usecase.RecordPokerVotingUsecase;
 import ru.bulbasaur.office.usecase.dto.PokerVotingResult;
 import ru.bulbasaur.office.usecase.dto.RecordPokerVotingCommand;
@@ -34,7 +34,7 @@ public class PokerWsHandler {
     private final PresenceRegistry registry;
     private final PokerRegistry pokerRegistry;
     private final RecordPokerVotingUsecase recordPokerVoting;
-    private final AchievementService achievements;
+    private final GrantAchievementUsecase grantAchievement;
     private final WsMessenger messenger;
 
     public void onList(WebSocketSession session) {
@@ -58,7 +58,7 @@ public class PokerWsHandler {
             messenger.send(session, PokerErrorOut.of("Слишком много активных комнат, попробуйте позже."));
             return;
         }
-        room.join(state.playerId(), state.login(), state.role().name(), session);
+        room.join(state.playerId(), state.login(), state.appearance(), session);
         messenger.send(session, room.stateFor(state.playerId(), System.currentTimeMillis()));
     }
 
@@ -73,7 +73,7 @@ public class PokerWsHandler {
             messenger.send(session, roomsOut());
             return;
         }
-        if (!room.join(state.playerId(), state.login(), state.role().name(), session)) {
+        if (!room.join(state.playerId(), state.login(), state.appearance(), session)) {
             messenger.send(session, PokerErrorOut.of("Комната переполнена."));
             return;
         }
@@ -118,7 +118,7 @@ public class PokerWsHandler {
             return;
         }
         if (room.vote(state.playerId(), msg.value())) {
-            achievements.grant(state.playerId(), Achievement.DEMOCRACY);
+            grantAchievement.execute(state.playerId(), Achievement.DEMOCRACY);
             broadcastPokerState(room);
         }
     }
@@ -134,7 +134,7 @@ public class PokerWsHandler {
             return;
         }
         if (room.isAdmin(state.playerId())) {
-            achievements.grant(state.playerId(), Achievement.CROUPIER);
+            grantAchievement.execute(state.playerId(), Achievement.CROUPIER);
         }
         try {
             PokerVotingResult result = recordPokerVoting.execute(

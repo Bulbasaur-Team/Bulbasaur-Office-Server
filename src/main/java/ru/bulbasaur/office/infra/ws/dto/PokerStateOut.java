@@ -1,5 +1,7 @@
 package ru.bulbasaur.office.infra.ws.dto;
 
+import ru.bulbasaur.office.domain.model.PlayerAppearance;
+
 import java.util.List;
 
 /**
@@ -13,7 +15,7 @@ public record PokerStateOut(String type, String id, String name, boolean isAdmin
                             List<DoneTask> tasks) {
 
     /** Участник комнаты; voted — отдал ли голос в текущем голосовании. */
-    public record Participant(String login, String role, boolean admin, boolean voted) {
+    public record Participant(String login, PlayerAppearance appearance, boolean admin, boolean voted) {
     }
 
     /** Текущая задача; votes заполняются только после вскрытия. */
@@ -22,7 +24,7 @@ public record PokerStateOut(String type, String id, String name, boolean isAdmin
     }
 
     /** Вскрытый голос. */
-    public record Vote(String login, String role, String value) {
+    public record Vote(String login, PlayerAppearance appearance, String value) {
     }
 
     /** Завершённая задача из списка вверху экрана. */

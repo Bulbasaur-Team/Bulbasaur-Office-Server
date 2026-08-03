@@ -31,10 +31,10 @@ public class GetOfficeMetricsUsecase {
     private final OfficeMetricsPort metrics;
     private final LiveMetricsPort liveMetrics;
     private final OnlinePlayersPort onlinePlayers;
-    private final AchievementService achievements;
+    private final GrantAchievementUsecase grantAchievement;
 
     public List<OfficeMetricsPoint> execute(UUID playerId) {
-        achievements.grant(playerId, Achievement.TRADER);
+        grantAchievement.execute(playerId, Achievement.TRADER);
         return loadMetrics();
     }
 

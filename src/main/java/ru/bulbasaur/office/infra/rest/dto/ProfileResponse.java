@@ -1,5 +1,7 @@
 package ru.bulbasaur.office.infra.rest.dto;
 
-/** Профиль текущего игрока; role == null — роль ещё не выбрана. */
-public record ProfileResponse(String login, String role) {
+import ru.bulbasaur.office.domain.model.PlayerAppearance;
+
+/** Профиль текущего игрока: баланс BC и надетая одежда. */
+public record ProfileResponse(String login, long bulbaCoinBalance, PlayerAppearance appearance) {
 }

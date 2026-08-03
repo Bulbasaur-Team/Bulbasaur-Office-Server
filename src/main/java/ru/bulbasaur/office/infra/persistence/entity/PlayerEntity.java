@@ -29,7 +29,11 @@ public class PlayerEntity {
 
     private Instant createdAt;
 
-    /** Выбранная роль (скин Бульбазавра); null — игрок ещё не выбирал. */
+    /** Выбранная роль (legacy); в мультиплеере больше не используется. */
     @Enumerated(EnumType.STRING)
     private Role role;
+
+    /** Баланс Bulba Coin. */
+    @jakarta.persistence.Column(name = "bulba_coin_balance")
+    private long bulbaCoinBalance;
 }

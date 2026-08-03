@@ -1,7 +1,7 @@
 package ru.bulbasaur.office.usecase.dto;
 
-import ru.bulbasaur.office.domain.model.Role;
+import java.util.UUID;
 
-/** Строка сообщества из хранилища: роль (null — не выбрана) и число полученных ачивок. */
-public record StoredCommunityPlayer(String login, Role role, long ownedAchievements) {
+/** Строка сообщества из хранилища: id, логин и число полученных ачивок. */
+public record StoredCommunityPlayer(UUID id, String login, long ownedAchievements) {
 }

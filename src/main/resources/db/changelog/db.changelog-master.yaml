@@ -32,3 +32,6 @@ databaseChangeLog:
   - include:
       file: changes/011-retro-sticker-sort-order.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/012-bulba-coins-and-wardrobe.yaml
+      relativeToChangelogFile: true

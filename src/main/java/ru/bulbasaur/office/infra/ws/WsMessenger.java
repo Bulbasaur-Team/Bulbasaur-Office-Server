@@ -51,7 +51,7 @@ public class WsMessenger {
 
     public PlayerState stateOf(PresenceState state) {
         return new PlayerState(
-                state.sessionId(), state.login(), state.role().name(),
+                state.sessionId(), state.login(), state.appearance(),
                 state.x(), state.y(), state.facing(),
                 state.heldItemId(), state.heldItemType());
     }

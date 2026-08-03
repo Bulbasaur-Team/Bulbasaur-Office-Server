@@ -15,7 +15,7 @@ public class SubmitScoreUsecase {
 
     private final LeaderboardRepositoryPort leaderboard;
     private final GetLeaderboardUsecase getLeaderboard;
-    private final AchievementService achievements;
+    private final RecheckAchievementsUsecase recheckAchievements;
     private final EventLogService eventLog;
 
     public LeaderboardView execute(UUID playerId, String login, GameId game, long value, int limit) {
@@ -24,7 +24,7 @@ public class SubmitScoreUsecase {
                 .orElse(null);
 
         leaderboard.submit(playerId, game, value, game.direction(), game.accumulate());
-        achievements.recheck(playerId);
+        recheckAchievements.execute(playerId);
         LeaderboardView view = getLeaderboard.execute(game, playerId, login, limit);
         // Логируем, только если игрок реально попал в видимый топ.
         if (view.me() != null && view.me().rank() <= view.top().size()) {

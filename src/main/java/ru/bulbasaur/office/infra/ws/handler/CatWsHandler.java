@@ -13,8 +13,8 @@ import ru.bulbasaur.office.infra.ws.WsMessenger;
 import ru.bulbasaur.office.infra.ws.dto.CatSayOut;
 import ru.bulbasaur.office.infra.ws.dto.CatStateOut;
 import ru.bulbasaur.office.infra.ws.dto.CatTalkMessage;
-import ru.bulbasaur.office.usecase.AchievementService;
-import ru.bulbasaur.office.usecase.CatAdviceService;
+import ru.bulbasaur.office.usecase.GrantAchievementUsecase;
+import ru.bulbasaur.office.usecase.PickCatAdviceUsecase;
 
 /** Бульба Кот: диалог (пауза), советы и серверный тик маршрута. */
 @Component
@@ -24,8 +24,8 @@ public class CatWsHandler {
 
     private final PresenceRegistry registry;
     private final BulbaCatRegistry bulbaCatRegistry;
-    private final AchievementService achievements;
-    private final CatAdviceService catAdvice;
+    private final GrantAchievementUsecase grantAchievement;
+    private final PickCatAdviceUsecase pickCatAdvice;
     private final WsMessenger messenger;
 
     public void onTalk(WebSocketSession session, CatTalkMessage msg) {
@@ -37,7 +37,7 @@ public class CatWsHandler {
             return;
         }
         if (msg.talking()) {
-            achievements.grant(state.playerId(), Achievement.MEOW);
+            grantAchievement.execute(state.playerId(), Achievement.MEOW);
         }
         CatStateOut out = bulbaCatRegistry.setTalking(session.getId(), msg.talking());
         if (out != null) {
@@ -57,7 +57,7 @@ public class CatWsHandler {
         }
         String text;
         try {
-            text = catAdvice.pickAdvice(state.playerId());
+            text = pickCatAdvice.execute(state.playerId());
         } catch (Exception e) {
             log.error("не удалось подобрать совет кота для {}", state.login(), e);
             text = "Что-то пошло не так… мяукни ещё раз чуть позже.";

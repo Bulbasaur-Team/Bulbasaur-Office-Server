@@ -1,6 +1,7 @@
 package ru.bulbasaur.office.infra.ws;
 
 import org.springframework.web.socket.WebSocketSession;
+import ru.bulbasaur.office.domain.model.PlayerAppearance;
 import ru.bulbasaur.office.usecase.dto.PokerVoteRecord;
 import ru.bulbasaur.office.infra.ws.dto.PokerStateOut;
 
@@ -25,7 +26,7 @@ public class PokerRoom {
     private static final int MAX_PARTICIPANTS = 30;
 
     /** Участник: сессия обновляется при повторном входе (реконнект). */
-    public record Participant(UUID playerId, String login, String role, WebSocketSession session) {
+    public record Participant(UUID playerId, String login, PlayerAppearance appearance, WebSocketSession session) {
     }
 
     /** Итог завершённого голосования — для сохранения в БД. */
@@ -84,11 +85,12 @@ public class PokerRoom {
         return adminPlayerId.equals(playerId);
     }
 
-    public synchronized boolean join(UUID playerId, String login, String role, WebSocketSession session) {
+    public synchronized boolean join(UUID playerId, String login, PlayerAppearance appearance, WebSocketSession session) {
         if (!participants.containsKey(playerId) && participants.size() >= MAX_PARTICIPANTS) {
             return false;
         }
-        participants.put(playerId, new Participant(playerId, login, role, session));
+        PlayerAppearance look = appearance != null ? appearance : PlayerAppearance.defaults();
+        participants.put(playerId, new Participant(playerId, login, look, session));
         return true;
     }
 
@@ -131,7 +133,7 @@ public class PokerRoom {
 
     /**
      * Вскрытие карт (только админ). Голоса замораживаются и материализуются со
-     * снимком логина/роли — участник, вышедший позже, не сотрёт свой вскрытый голос.
+     * снимком логина/внешности — участник, вышедший позже, не сотрёт свой вскрытый голос.
      */
     public synchronized FinishedVoting finish(UUID playerId) {
         if (!adminPlayerId.equals(playerId) || currentTitle == null || revealed) {
@@ -143,7 +145,7 @@ public class PokerRoom {
         for (Map.Entry<UUID, String> vote : votes.entrySet()) {
             Participant participant = participants.get(vote.getKey());
             if (participant != null) {
-                views.add(new PokerStateOut.Vote(participant.login(), participant.role(), vote.getValue()));
+                views.add(new PokerStateOut.Vote(participant.login(), participant.appearance(), vote.getValue()));
             }
             records.add(new PokerVoteRecord(vote.getKey(), vote.getValue()));
         }
@@ -165,7 +167,7 @@ public class PokerRoom {
         List<PokerStateOut.Participant> list = new ArrayList<>();
         for (Participant p : participants.values()) {
             list.add(new PokerStateOut.Participant(
-                    p.login(), p.role(), adminPlayerId.equals(p.playerId()), votes.containsKey(p.playerId())));
+                    p.login(), p.appearance(), adminPlayerId.equals(p.playerId()), votes.containsKey(p.playerId())));
         }
         PokerStateOut.Current current = currentTitle == null ? null
                 : new PokerStateOut.Current(currentTitle, revealed, average, recommended, revealedVotes);

@@ -3,7 +3,7 @@ package ru.bulbasaur.office.infra.scheduling;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import ru.bulbasaur.office.usecase.AchievementService;
+import ru.bulbasaur.office.usecase.AwardDayChampionsUsecase;
 
 /**
  * Выдаёт ачивку «Чемпион дня» победителям слова дня за прошедшие сутки. Запускается
@@ -14,10 +14,10 @@ import ru.bulbasaur.office.usecase.AchievementService;
 @RequiredArgsConstructor
 public class DayChampionJob {
 
-    private final AchievementService achievements;
+    private final AwardDayChampionsUsecase awardDayChampions;
 
     @Scheduled(cron = "0 5 0 * * *", zone = "Europe/Moscow")
     public void awardDayChampions() {
-        achievements.awardDayChampions();
+        awardDayChampions.execute();
     }
 }

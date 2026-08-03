@@ -2,6 +2,7 @@ package ru.bulbasaur.office.usecase;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import ru.bulbasaur.office.domain.model.BulbaCoinKind;
 import ru.bulbasaur.office.domain.model.GameId;
 import ru.bulbasaur.office.usecase.dto.StoredPlayer;
 import ru.bulbasaur.office.usecase.dto.WotdProgressView;
@@ -21,10 +22,11 @@ public class SaveWotdProgressUsecase {
 
     private final WotdProgressRepositoryPort progress;
     private final DayPort day;
-    private final AchievementService achievements;
+    private final RecheckAchievementsUsecase recheckAchievements;
     private final LeaderboardRepositoryPort leaderboard;
     private final PlayerRepositoryPort players;
     private final EventLogService eventLog;
+    private final CreditBulbaCoinsUsecase credit;
 
     public WotdProgressView execute(SaveWotdProgressCommand command) {
         LocalDate today = day.today();
@@ -56,8 +58,12 @@ public class SaveWotdProgressUsecase {
             players.findById(command.playerId())
                     .map(StoredPlayer::login)
                     .ifPresent(login -> eventLog.wotdSolved(login, game, command.attempts()));
+            String gameTitle = game == GameId.BULBA_GUESS ? "Bulba Guess" : "Bulba Wordle";
+            credit.execute(command.playerId(), 200, BulbaCoinKind.WOTD_SOLVE,
+                    "wotd:" + game.code() + ":" + today,
+                    "Слово дня пройдено («" + gameTitle + "»)");
         }
-        achievements.recheck(command.playerId());
+        recheckAchievements.execute(command.playerId());
         return new WotdProgressView(command.solved(), command.attempts(), command.guesses());
     }
 }

@@ -10,7 +10,8 @@ import ru.bulbasaur.office.domain.model.Achievement;
 import ru.bulbasaur.office.infra.rest.dto.AchievementResponse;
 import ru.bulbasaur.office.infra.rest.dto.AchievementsResponse;
 import ru.bulbasaur.office.infra.security.AuthPrincipal;
-import ru.bulbasaur.office.usecase.AchievementService;
+import ru.bulbasaur.office.usecase.CountOwnedAchievementsUsecase;
+import ru.bulbasaur.office.usecase.ListAchievementsUsecase;
 import ru.bulbasaur.office.usecase.dto.AchievementView;
 
 import java.util.List;
@@ -20,17 +21,18 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AchievementController {
 
-    private final AchievementService achievements;
+    private final ListAchievementsUsecase listAchievements;
+    private final CountOwnedAchievementsUsecase countOwned;
 
     @GetMapping
     public AchievementsResponse list(@AuthenticationPrincipal AuthPrincipal player) {
-        return toResponse(achievements.list(player.id()), achievements.countOwnedPublic(player.id()));
+        return toResponse(listAchievements.execute(player.id()), countOwned.execute(player.id()));
     }
 
     /** Ачивки другого игрока — для экрана сообщества. */
     @GetMapping("/{login}")
     public AchievementsResponse listOf(@PathVariable String login) {
-        List<AchievementView> views = achievements.listByLogin(login);
+        List<AchievementView> views = listAchievements.executeByLogin(login);
         int owned = (int) views.stream().filter(AchievementView::owned).count();
         return toResponse(views, owned);
     }

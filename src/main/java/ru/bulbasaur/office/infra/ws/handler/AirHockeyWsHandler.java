@@ -15,7 +15,7 @@ import ru.bulbasaur.office.infra.ws.dto.AirHockeyErrorOut;
 import ru.bulbasaur.office.infra.ws.dto.AirHockeyJoinMessage;
 import ru.bulbasaur.office.infra.ws.dto.AirHockeyPaddleMessage;
 import ru.bulbasaur.office.infra.ws.dto.AirHockeyRematchRespondMessage;
-import ru.bulbasaur.office.usecase.AchievementService;
+import ru.bulbasaur.office.usecase.GrantAchievementUsecase;
 import ru.bulbasaur.office.usecase.EventLogService;
 
 import java.util.UUID;
@@ -27,7 +27,7 @@ public class AirHockeyWsHandler {
 
     private final PresenceRegistry registry;
     private final AirHockeyRegistry airHockeyRegistry;
-    private final AchievementService achievements;
+    private final GrantAchievementUsecase grantAchievement;
     private final EventLogService eventLog;
     private final WsMessenger messenger;
 
@@ -198,10 +198,10 @@ public class AirHockeyWsHandler {
         AirHockeyTable.Seat red = table.red();
         AirHockeyTable.Seat blue = table.blue();
         if (red != null) {
-            achievements.grant(red.playerId(), Achievement.HOCKEY);
+            grantAchievement.execute(red.playerId(), Achievement.HOCKEY);
         }
         if (blue != null) {
-            achievements.grant(blue.playerId(), Achievement.HOCKEY);
+            grantAchievement.execute(blue.playerId(), Achievement.HOCKEY);
         }
     }
 
@@ -212,9 +212,9 @@ public class AirHockeyWsHandler {
         AirHockeyTable.Seat red = table.red();
         AirHockeyTable.Seat blue = table.blue();
         if (red != null && winnerLogin.equals(red.login())) {
-            achievements.grant(red.playerId(), Achievement.OVECHKIN);
+            grantAchievement.execute(red.playerId(), Achievement.OVECHKIN);
         } else if (blue != null && winnerLogin.equals(blue.login())) {
-            achievements.grant(blue.playerId(), Achievement.OVECHKIN);
+            grantAchievement.execute(blue.playerId(), Achievement.OVECHKIN);
         }
     }
 

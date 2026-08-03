@@ -1,13 +1,13 @@
 package ru.bulbasaur.office.infra.persistence.repository;
 
-import ru.bulbasaur.office.domain.model.Role;
+import java.util.UUID;
 
-/** Строка сообщества: логин, роль (null — не выбрана) и число ачивок игрока. */
+/** Строка сообщества: id, логин и число ачивок игрока. */
 public interface CommunityRowProjection {
 
-    String getLogin();
+    UUID getId();
 
-    Role getRole();
+    String getLogin();
 
     long getOwned();
 }

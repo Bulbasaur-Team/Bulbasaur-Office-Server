@@ -11,7 +11,7 @@ import ru.bulbasaur.office.infra.ws.WsMessenger;
 import ru.bulbasaur.office.infra.ws.dto.ProjectorIndexMessage;
 import ru.bulbasaur.office.infra.ws.dto.ProjectorOnMessage;
 import ru.bulbasaur.office.infra.ws.dto.ProjectorStateOut;
-import ru.bulbasaur.office.usecase.AchievementService;
+import ru.bulbasaur.office.usecase.GrantAchievementUsecase;
 
 /** Проектор в локации: включение, слайды, выключение. */
 @Component
@@ -20,7 +20,7 @@ public class ProjectorWsHandler {
 
     private final PresenceRegistry registry;
     private final ProjectorRegistry projectorRegistry;
-    private final AchievementService achievements;
+    private final GrantAchievementUsecase grantAchievement;
     private final WsMessenger messenger;
 
     public void onOn(WebSocketSession session, ProjectorOnMessage msg) {
@@ -31,7 +31,7 @@ public class ProjectorWsHandler {
         if (!projectorRegistry.turnOn(state.locationId(), msg.ownerId())) {
             return;
         }
-        achievements.grant(state.playerId(), Achievement.SPEAKER);
+        grantAchievement.execute(state.playerId(), Achievement.SPEAKER);
         messenger.broadcastAll(state.locationId(), projectorRegistry.snapshot(state.locationId()));
     }
 

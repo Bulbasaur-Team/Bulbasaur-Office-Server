@@ -17,8 +17,9 @@ public class RegisterUsecase {
     private final PlayerRepositoryPort players;
     private final PasswordHasherPort passwordHasher;
     private final TokenPort tokens;
-    private final AchievementService achievements;
+    private final RecheckAchievementsUsecase recheckAchievements;
     private final EventLogService eventLog;
+    private final EnsureWardrobeDefaultsUsecase ensureDefaults;
 
     public AuthResult execute(String login, String rawPassword) {
         if (players.existsByLogin(login)) {
@@ -26,7 +27,8 @@ public class RegisterUsecase {
         }
         Player player = players.create(login, passwordHasher.hash(rawPassword));
         eventLog.playerRegistered(player.login());
-        achievements.recheck(player.id());
+        ensureDefaults.execute(player.id());
+        recheckAchievements.execute(player.id());
         return new AuthResult(tokens.issue(player.id(), player.login()), player.login());
     }
 }

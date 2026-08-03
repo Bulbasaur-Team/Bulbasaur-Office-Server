@@ -1,0 +1,270 @@
+databaseChangeLog:
+  - changeSet:
+      id: 12-bulba-coins-and-wardrobe
+      author: bulba
+      changes:
+        - addColumn:
+            tableName: players
+            columns:
+              - column:
+                  name: bulba_coin_balance
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: bulba_coin_ledger
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: player_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_bulba_coin_ledger_player
+                    references: players(id)
+                    deleteCascade: true
+              - column:
+                  name: amount
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: kind
+                  type: varchar(40)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: ref
+                  type: varchar(120)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: title
+                  type: varchar(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: bulba_coin_ledger
+            columnNames: player_id, kind, ref
+            constraintName: uq_bulba_coin_ledger_player_kind_ref
+        - createIndex:
+            tableName: bulba_coin_ledger
+            indexName: idx_bulba_coin_ledger_player_created
+            columns:
+              - column:
+                  name: player_id
+              - column:
+                  name: created_at
+                  descending: true
+
+        - createTable:
+            tableName: wardrobe_items
+            columns:
+              - column:
+                  name: code
+                  type: varchar(64)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: category
+                  type: varchar(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(80)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: price
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sort_order
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sellable
+                  type: boolean
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: player_wardrobe
+            columns:
+              - column:
+                  name: player_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_player_wardrobe_player
+                    references: players(id)
+                    deleteCascade: true
+              - column:
+                  name: item_code
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_player_wardrobe_item
+                    references: wardrobe_items(code)
+              - column:
+                  name: purchased_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: player_wardrobe
+            columnNames: player_id, item_code
+            constraintName: pk_player_wardrobe
+
+        - createTable:
+            tableName: player_equipped
+            columns:
+              - column:
+                  name: player_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_player_equipped_player
+                    references: players(id)
+                    deleteCascade: true
+              - column:
+                  name: category
+                  type: varchar(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: item_code
+                  type: varchar(64)
+                  constraints:
+                    nullable: true
+                    foreignKeyName: fk_player_equipped_item
+                    references: wardrobe_items(code)
+        - addPrimaryKey:
+            tableName: player_equipped
+            columnNames: player_id, category
+            constraintName: pk_player_equipped
+
+        # Каталог одежды (финальное состояние после 013–029)
+        - sql:
+            sql: |
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable) VALUES
+              ('top_hoodie_green', 'TOP', 'Зелёная толстовка', 8000, 10, true),
+              ('top_hoodie_black', 'TOP', 'Чёрная толстовка', 0, 40, false),
+              ('top_hoodie_white', 'TOP', 'Белая толстовка', 8000, 50, true),
+              ('top_hoodie_white_a', 'TOP', 'Белая толстовка Альфа', 12000, 60, true),
+              ('bottom_beach_shorts', 'BOTTOM', 'Пляжные шорты', 5000, 40, true),
+              ('bottom_office_shorts', 'BOTTOM', 'Офисные шорты', 3000, 50, true),
+              ('bottom_denim_shorts', 'BOTTOM', 'Джинсовые шорты', 3000, 60, true),
+              ('bottom_beige_shorts', 'BOTTOM', 'Бежевые шорты', 5000, 70, true),
+              ('bottom_black_shorts', 'BOTTOM', 'Чёрные шорты', 0, 80, false),
+              ('bottom_white_shorts', 'BOTTOM', 'Белые шорты', 3000, 90, true),
+              ('bottom_sport_shorts', 'BOTTOM', 'Спортивные шорты', 2000, 100, true),
+              ('glasses_pince_nez', 'GLASSES', 'Пенсне', 1000, 10, true),
+              ('glasses_pince_nez_orange', 'GLASSES', 'Пенсне оранжевое', 3000, 20, true),
+              ('glasses_black', 'GLASSES', 'Чёрные очки', 3000, 30, true);
+
+        # Всем игрокам — дефолтный комплект (чёрное худи + чёрные шорты)
+        - sql:
+            sql: |
+              INSERT INTO player_wardrobe (player_id, item_code, purchased_at)
+              SELECT id, 'top_hoodie_black', now() FROM players
+              ON CONFLICT DO NOTHING;
+              INSERT INTO player_wardrobe (player_id, item_code, purchased_at)
+              SELECT id, 'bottom_black_shorts', now() FROM players
+              ON CONFLICT DO NOTHING;
+              INSERT INTO player_equipped (player_id, category, item_code)
+              SELECT id, 'TOP', 'top_hoodie_black' FROM players
+              ON CONFLICT DO NOTHING;
+              INSERT INTO player_equipped (player_id, category, item_code)
+              SELECT id, 'BOTTOM', 'bottom_black_shorts' FROM players
+              ON CONFLICT DO NOTHING;
+              INSERT INTO player_equipped (player_id, category, item_code)
+              SELECT id, 'HAT', NULL FROM players
+              ON CONFLICT DO NOTHING;
+              INSERT INTO player_equipped (player_id, category, item_code)
+              SELECT id, 'GLASSES', NULL FROM players
+              ON CONFLICT DO NOTHING;
+              INSERT INTO player_equipped (player_id, category, item_code)
+              SELECT id, 'SHOES', NULL FROM players
+              ON CONFLICT DO NOTHING;
+
+        # Ретро-начисление BC за уже полученные ачивки (кроме Хамелеона)
+        - sql:
+            sql: |
+              INSERT INTO bulba_coin_ledger (id, player_id, amount, kind, ref, title, created_at)
+              SELECT gen_random_uuid(),
+                     a.player_id,
+                     1000,
+                     'ACHIEVEMENT_BACKFILL',
+                     'achievement:' || a.code,
+                     'Ачивка «' || CASE a.code
+                       WHEN 'bulbazavr' THEN 'Я уже Бульбазавр!'
+                       WHEN 'volleyball' THEN 'Волейболист'
+                       WHEN 'jumper' THEN 'Попрыгун'
+                       WHEN 'jumper_10k' THEN 'Прыгун'
+                       WHEN 'jumper_100k' THEN 'Великий прыгун'
+                       WHEN 'jumper_200k' THEN 'Легенда прыжков'
+                       WHEN 'shopaholic' THEN 'Шопоголик'
+                       WHEN 'trucker' THEN 'Дальнобойщик'
+                       WHEN 'trucker_pro' THEN 'Матёрый дальнобойщик'
+                       WHEN 'psychic' THEN 'Экстрасенс'
+                       WHEN 'decoder' THEN 'Дешифратор'
+                       WHEN 'guard' THEN 'Охранник'
+                       WHEN 'lightning' THEN 'Молния Маккуин'
+                       WHEN 'discipline' THEN 'Дисциплина'
+                       WHEN 'champion' THEN 'Чемпион'
+                       WHEN 'day_champion' THEN 'Чемпион дня'
+                       WHEN 'lover' THEN 'Любвеобильный'
+                       WHEN 'tennis' THEN 'Теннисист'
+                       WHEN 'cheater' THEN 'Читер'
+                       WHEN 'croupier' THEN 'Крупье'
+                       WHEN 'democracy' THEN 'Демократия'
+                       WHEN 'coffeeman' THEN 'Кофеман'
+                       WHEN 'designer' THEN 'Дизайнер'
+                       WHEN 'tetrachromat' THEN 'Тетрахромат'
+                       WHEN 'hammer' THEN 'Молоток'
+                       WHEN 'dadata' THEN 'Укротитель DaData'
+                       WHEN 'hockey' THEN 'Хоккеист'
+                       WHEN 'ovechkin' THEN 'Овечкин'
+                       WHEN 'speaker' THEN 'Спикер'
+                       WHEN 'meow' THEN 'Мяу'
+                       WHEN 'trader' THEN 'Трейдер'
+                       WHEN 'sysadmin' THEN 'Сисадмин'
+                       WHEN 'careful' THEN 'Осторожный'
+                       WHEN 'social' THEN 'Социальный'
+                       ELSE a.code
+                     END || '»',
+                     a.granted_at
+              FROM achievements a
+              WHERE a.code <> 'chameleon'
+              ON CONFLICT (player_id, kind, ref) DO NOTHING;
+
+              UPDATE players p
+              SET bulba_coin_balance = COALESCE((
+                SELECT SUM(l.amount) FROM bulba_coin_ledger l WHERE l.player_id = p.id
+              ), 0);
+
+        # Удаляем ачивку Хамелеон
+        - sql:
+            sql: |
+              DELETE FROM achievements WHERE code = 'chameleon';
