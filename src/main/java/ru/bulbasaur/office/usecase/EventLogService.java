@@ -68,6 +68,16 @@ public class EventLogService {
                         + " сыграли в аэрохоккей, счёт " + score + " " + outcome);
     }
 
+    public void wardrobeItemBought(String login, String itemName, long price) {
+        log.append(INFO, "wardrobe-service",
+                "Бульбазавр " + login + " купил «" + itemName + "» за " + price + " Bulba Coins");
+    }
+
+    public void wardrobeItemSold(String login, String itemName, long refund) {
+        log.append(INFO, "wardrobe-service",
+                "Бульбазавр " + login + " продал «" + itemName + "» за " + refund + " Bulba Coins");
+    }
+
     private static String gameTitle(GameId game) {
         return switch (game) {
             case BULBA_JUMP -> "Bulba Jump";

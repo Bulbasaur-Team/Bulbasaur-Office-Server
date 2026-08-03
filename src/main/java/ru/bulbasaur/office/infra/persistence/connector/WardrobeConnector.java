@@ -37,9 +37,12 @@ public class WardrobeConnector implements WardrobeRepositoryPort {
     public List<WardrobeItemView> catalog(UUID playerId) {
         Map<String, Instant> purchasedAt = purchasedAtByCode(playerId);
         PlayerAppearance appearance = appearanceOf(playerId);
-        return items.findAllByOrderBySortOrderAsc().stream()
+        return items.findAll().stream()
+                .sorted(Comparator
+                        .comparingLong(WardrobeItemEntity::getPrice)
+                        .thenComparing(Comparator.comparingInt(WardrobeItemEntity::getSortOrder).reversed())
+                        .thenComparing(WardrobeItemEntity::getCode))
                 .map(item -> toView(item, purchasedAt, appearance))
-                .sorted(catalogOrder())
                 .toList();
     }
 
@@ -144,16 +147,6 @@ public class WardrobeConnector implements WardrobeRepositoryPort {
                 item.getCode(), category, item.getName(), item.getPrice(),
                 item.isSellable(), isOwned, isEquipped,
                 isOwned ? purchasedAt.get(item.getCode()) : null);
-    }
-
-    private static Comparator<WardrobeItemView> catalogOrder() {
-        return Comparator
-                .comparing(WardrobeItemView::owned).reversed()
-                .thenComparing(item -> item.owned()
-                        ? Optional.ofNullable(item.purchasedAt()).orElse(Instant.EPOCH)
-                        : Instant.MAX)
-                .thenComparingLong(item -> item.owned() ? 0L : item.price())
-                .thenComparing(WardrobeItemView::code);
     }
 
     private void saveEquipped(UUID playerId, WardrobeCategory category, String itemCode) {

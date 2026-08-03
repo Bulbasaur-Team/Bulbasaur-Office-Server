@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.bulbasaur.office.domain.model.BulbaCoinKind;
 import ru.bulbasaur.office.usecase.dto.WardrobeItemView;
+import ru.bulbasaur.office.usecase.port.out.PlayerRepositoryPort;
 import ru.bulbasaur.office.usecase.port.out.WardrobeRepositoryPort;
 
 import java.util.UUID;
@@ -16,6 +17,8 @@ public class BuyWardrobeItemUsecase {
 
     private final WardrobeRepositoryPort wardrobe;
     private final DebitBulbaCoinsUsecase debit;
+    private final PlayerRepositoryPort players;
+    private final EventLogService eventLog;
 
     @Transactional
     public WardrobeItemView execute(UUID playerId, String itemCode) {
@@ -31,6 +34,8 @@ public class BuyWardrobeItemUsecase {
                 "buy:" + itemCode + ":" + UUID.randomUUID(),
                 "Покупка: " + item.name());
         wardrobe.grantItem(playerId, itemCode);
+        players.findById(playerId)
+                .ifPresent(player -> eventLog.wardrobeItemBought(player.login(), item.name(), item.price()));
         return wardrobe.findItem(itemCode, playerId).orElseThrow();
     }
 }

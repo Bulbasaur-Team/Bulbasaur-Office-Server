@@ -7,6 +7,7 @@ import ru.bulbasaur.office.domain.model.BulbaCoinKind;
 import ru.bulbasaur.office.domain.model.PlayerAppearance;
 import ru.bulbasaur.office.usecase.dto.WardrobeItemView;
 import ru.bulbasaur.office.usecase.dto.WardrobeSellView;
+import ru.bulbasaur.office.usecase.port.out.PlayerRepositoryPort;
 import ru.bulbasaur.office.usecase.port.out.WardrobeRepositoryPort;
 
 import java.util.UUID;
@@ -20,6 +21,8 @@ public class SellWardrobeItemUsecase {
     private final CreditBulbaCoinsUsecase credit;
     private final GetBulbaCoinBalanceUsecase balance;
     private final AppearanceBroadcaster appearanceBroadcaster;
+    private final PlayerRepositoryPort players;
+    private final EventLogService eventLog;
 
     @Transactional
     public WardrobeSellView execute(UUID playerId, String itemCode) {
@@ -39,6 +42,8 @@ public class SellWardrobeItemUsecase {
         credit.execute(playerId, refund, BulbaCoinKind.WARDROBE_SELL,
                 "sell:" + itemCode + ":" + UUID.randomUUID(),
                 "Продажа: " + item.name());
+        players.findById(playerId)
+                .ifPresent(player -> eventLog.wardrobeItemSold(player.login(), item.name(), refund));
         PlayerAppearance appearance = wardrobe.appearanceOf(playerId);
         appearanceBroadcaster.broadcast(playerId, appearance);
         return new WardrobeSellView(balance.execute(playerId), refund, appearance);
