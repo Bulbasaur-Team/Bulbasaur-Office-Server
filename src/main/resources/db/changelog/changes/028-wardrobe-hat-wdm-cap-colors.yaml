@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 028-wardrobe-hat-wdm-cap-colors
+      author: bulba
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable) VALUES
+              ('hat_wdm_blue_cap', 'HAT', 'Синяя кепка WDM', 5000, 20, true),
+              ('hat_wdm_red_cap', 'HAT', 'Красная кепка WDM', 5000, 30, true),
+              ('hat_wdm_black_cap', 'HAT', 'Чёрная кепка WDM', 5000, 40, true),
+              ('hat_wdm_green_cap', 'HAT', 'Зелёная кепка WDM', 5000, 50, true),
+              ('hat_wdm_orange_cap', 'HAT', 'Оранжевая кепка WDM', 5000, 60, true),
+              ('hat_wdm_pink_cap', 'HAT', 'Розовая кепка WDM', 5000, 70, true)
+              ON CONFLICT DO NOTHING;

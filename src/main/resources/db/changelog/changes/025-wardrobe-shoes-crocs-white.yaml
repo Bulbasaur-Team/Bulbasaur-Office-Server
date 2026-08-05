@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      id: 025-wardrobe-shoes-crocs-white
+      author: bulba
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable)
+              VALUES ('shoes_crocs_white', 'SHOES', 'Белые кроксы', 5000, 10, true)
+              ON CONFLICT DO NOTHING;

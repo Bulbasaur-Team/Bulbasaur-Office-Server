@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      id: 027-wardrobe-hat-wdm-white-cap
+      author: bulba
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable)
+              VALUES ('hat_wdm_white_cap', 'HAT', 'Белая кепка WDM', 5000, 10, true)
+              ON CONFLICT DO NOTHING;

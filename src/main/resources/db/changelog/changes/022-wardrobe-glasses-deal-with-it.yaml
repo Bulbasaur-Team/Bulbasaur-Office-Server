@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      id: 022-wardrobe-glasses-deal-with-it
+      author: bulba
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable)
+              VALUES ('glasses_deal_with_it', 'GLASSES', 'Очки Deal with it', 5000, 80, true)
+              ON CONFLICT DO NOTHING;

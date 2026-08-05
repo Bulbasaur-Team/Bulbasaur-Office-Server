@@ -1,0 +1,73 @@
+databaseChangeLog:
+  - changeSet:
+      id: 024-wardrobe-top-tshirt-beige
+      author: bulba
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable)
+              VALUES ('top_tshirt_beige', 'TOP', 'Бежевая футболка', 2000, 111, true)
+              ON CONFLICT DO NOTHING;
+  - changeSet:
+      id: 024-wardrobe-top-tshirt-black
+      author: bulba
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable)
+              VALUES ('top_tshirt_black', 'TOP', 'Чёрная футболка', 2000, 112, true)
+              ON CONFLICT DO NOTHING;
+  - changeSet:
+      id: 024-wardrobe-top-tshirt-blue
+      author: bulba
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable)
+              VALUES ('top_tshirt_blue', 'TOP', 'Синяя футболка', 2000, 113, true)
+              ON CONFLICT DO NOTHING;
+  - changeSet:
+      id: 024-wardrobe-top-tshirt-green
+      author: bulba
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable)
+              VALUES ('top_tshirt_green', 'TOP', 'Зелёная футболка', 2000, 114, true)
+              ON CONFLICT DO NOTHING;
+  - changeSet:
+      id: 024-wardrobe-top-tshirt-orange
+      author: bulba
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable)
+              VALUES ('top_tshirt_orange', 'TOP', 'Оранжевая футболка', 2000, 115, true)
+              ON CONFLICT DO NOTHING;
+  - changeSet:
+      id: 024-wardrobe-top-tshirt-pink
+      author: bulba
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable)
+              VALUES ('top_tshirt_pink', 'TOP', 'Розовая футболка', 2000, 116, true)
+              ON CONFLICT DO NOTHING;
+  - changeSet:
+      id: 024-wardrobe-top-tshirt-purple
+      author: bulba
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable)
+              VALUES ('top_tshirt_purple', 'TOP', 'Фиолетовая футболка', 2000, 117, true)
+              ON CONFLICT DO NOTHING;
+  - changeSet:
+      id: 024-wardrobe-top-tshirt-red
+      author: bulba
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable)
+              VALUES ('top_tshirt_red', 'TOP', 'Красная футболка', 2000, 118, true)
+              ON CONFLICT DO NOTHING;

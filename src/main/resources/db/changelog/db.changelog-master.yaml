@@ -62,3 +62,24 @@ databaseChangeLog:
   - include:
       file: changes/021-halve-wardrobe-prices.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/022-wardrobe-glasses-deal-with-it.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/023-wardrobe-top-tshirt-white.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/024-wardrobe-top-tshirt-colors.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/025-wardrobe-shoes-crocs-white.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/026-wardrobe-shoes-crocs-colors.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/027-wardrobe-hat-wdm-white-cap.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/028-wardrobe-hat-wdm-cap-colors.yaml
+      relativeToChangelogFile: true
