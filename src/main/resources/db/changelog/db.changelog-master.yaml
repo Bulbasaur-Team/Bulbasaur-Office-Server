@@ -83,3 +83,6 @@ databaseChangeLog:
   - include:
       file: changes/028-wardrobe-hat-wdm-cap-colors.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/029-wardrobe-hat-non-la.yaml
+      relativeToChangelogFile: true
