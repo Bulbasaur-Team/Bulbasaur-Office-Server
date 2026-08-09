@@ -78,6 +78,16 @@ public class EventLogService {
                 "Бульбазавр " + login + " продал «" + itemName + "» за " + refund + " Bulba Coins");
     }
 
+    public void quizLevelReached(String login, int level) {
+        log.append(INFO, "bulbaquiz-service",
+                "Бульбазавр " + login + " перешел на " + level + " уровень в Bulba Quiz");
+    }
+
+    public void quizChestOpened(String login, String reward) {
+        log.append(INFO, "bulbaquiz-service",
+                "Бульбазавр " + login + " открыл сундук и получил " + reward);
+    }
+
     private static String gameTitle(GameId game) {
         return switch (game) {
             case BULBA_JUMP -> "Bulba Jump";
@@ -89,6 +99,7 @@ public class EventLogService {
             case BULBA_SURKI -> "Bulba Surki";
             case BULBA_GUESS -> "Bulba Guess";
             case BULBA_WORDLE -> "Bulba Wordle";
+            case BULBA_QUIZ -> "Bulba Quiz";
         };
     }
 
@@ -108,6 +119,7 @@ public class EventLogService {
         return switch (game) {
             case BULBA_PARKING -> String.format(Locale.ROOT, "%.1f с", value / 1000.0);
             case BULBA_GUESS, BULBA_WORDLE -> value + " " + wordsWord(value);
+            case BULBA_QUIZ -> value + " " + levelWord(value);
             case BULBA_JUMP, BULBA_PACKER, BULBA_RACING, BULBA_TANKS, BULBA_COLORS, BULBA_SURKI -> value + " " + pointsWord(value);
         };
     }
@@ -122,6 +134,10 @@ public class EventLogService {
 
     private static String pointsWord(long n) {
         return plural(n, "очко", "очка", "очков");
+    }
+
+    private static String levelWord(long n) {
+        return plural(n, "уровень", "уровня", "уровней");
     }
 
     private static String plural(long n, String one, String few, String many) {

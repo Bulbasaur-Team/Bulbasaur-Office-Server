@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: 31-quiz-real-questions
+      author: bulba
+      comment: Replace placeholder quiz topics/questions with real bank (~100 per topic)
+      changes:
+        - sqlFile:
+            path: quiz-seed/031-quiz-questions.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+            endDelimiter: ;

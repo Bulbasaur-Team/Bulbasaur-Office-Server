@@ -135,6 +135,7 @@ public class PickCatAdviceUsecase {
             case BULBA_SURKI -> "Bulba Surki";
             case BULBA_GUESS -> "Bulba Guess";
             case BULBA_WORDLE -> "Bulba Wordle";
+            case BULBA_QUIZ -> "Bulba Quiz";
         };
     }
 
@@ -142,6 +143,7 @@ public class PickCatAdviceUsecase {
         return switch (game) {
             case BULBA_PARKING -> String.format(Locale.ROOT, "%.1f с", value / 1000.0);
             case BULBA_GUESS, BULBA_WORDLE -> value + " " + plural(value, "слово", "слова", "слов");
+            case BULBA_QUIZ -> value + " " + plural(value, "уровень", "уровня", "уровней");
             case BULBA_JUMP, BULBA_PACKER, BULBA_RACING, BULBA_TANKS, BULBA_COLORS, BULBA_SURKI
                     -> value + " " + plural(value, "очко", "очка", "очков");
         };

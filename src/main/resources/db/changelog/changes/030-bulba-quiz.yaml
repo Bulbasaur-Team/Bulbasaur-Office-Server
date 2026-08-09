@@ -1,0 +1,273 @@
+databaseChangeLog:
+  - changeSet:
+      id: 30-bulba-quiz
+      author: bulba
+      changes:
+        - createTable:
+            tableName: quiz_topics
+            columns:
+              - column:
+                  name: code
+                  type: varchar(32)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(80)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sort_order
+                  type: int
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: quiz_questions
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: topic_code
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_quiz_questions_topic
+                    references: quiz_topics(code)
+                    deleteCascade: true
+              - column:
+                  name: text
+                  type: varchar(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: options
+                  type: jsonb
+                  constraints:
+                    nullable: false
+              - column:
+                  name: correct_index
+                  type: int
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: quiz_questions
+            indexName: idx_quiz_questions_topic
+            columns:
+              - column:
+                  name: topic_code
+
+        - createTable:
+            tableName: quiz_player_state
+            columns:
+              - column:
+                  name: player_id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+                    foreignKeyName: fk_quiz_player_state_player
+                    references: players(id)
+                    deleteCascade: true
+              - column:
+                  name: level
+                  type: int
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: energy
+                  type: int
+                  defaultValueNumeric: 5
+                  constraints:
+                    nullable: false
+              - column:
+                  name: energy_updated_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: booster_reroll
+                  type: int
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: booster_fifty
+                  type: int
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: pending_chest
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: chests_opened
+                  type: int
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: quiz_attempt
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: player_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_quiz_attempt_player
+                    references: players(id)
+                    deleteCascade: true
+              - column:
+                  name: topic_code
+                  type: varchar(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: question_ids
+                  type: jsonb
+                  constraints:
+                    nullable: false
+              - column:
+                  name: current_index
+                  type: int
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: fifty_masked
+                  type: jsonb
+              - column:
+                  name: question_deadline
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: quiz_attempt
+            indexName: idx_quiz_attempt_player_status
+            columns:
+              - column:
+                  name: player_id
+              - column:
+                  name: status
+
+        - sql:
+            sql: |
+              INSERT INTO quiz_topics (code, name, sort_order) VALUES
+                ('sport', 'Спорт', 10),
+                ('cinema', 'Кино', 20),
+                ('art', 'Искусство', 30),
+                ('it', 'IT', 40),
+                ('science', 'Наука', 50)
+              ON CONFLICT DO NOTHING;
+
+              INSERT INTO quiz_questions (id, topic_code, text, options, correct_index) VALUES
+                ('a1000001-0001-4000-8000-000000000001', 'sport',
+                 'Сколько игроков одной команды одновременно на поле в футболе?',
+                 '["9","10","11","12"]'::jsonb, 2),
+                ('a1000001-0001-4000-8000-000000000002', 'sport',
+                 'Сколько очков даёт штрафной бросок в баскетболе?',
+                 '["1","2","3","4"]'::jsonb, 0),
+                ('a1000001-0001-4000-8000-000000000003', 'sport',
+                 'Сколько сетов нужно выиграть, чтобы победить в большинстве матчей Большого шлема (мужчины)?',
+                 '["1","2","3","5"]'::jsonb, 2),
+                ('a1000001-0001-4000-8000-000000000004', 'sport',
+                 'В каком виде спорта используют шайбу?',
+                 '["Футбол","Хоккей","Регби","Кёрлинг"]'::jsonb, 1),
+                ('a1000001-0001-4000-8000-000000000005', 'sport',
+                 'Олимпийские игры проходят раз в сколько лет?',
+                 '["2","3","4","5"]'::jsonb, 2),
+
+                ('a1000001-0001-4000-8000-000000000011', 'cinema',
+                 'Кто снял фильм «Начало» (Inception)?',
+                 '["Стивен Спилберг","Кристофер Нолан","Джеймс Кэмерон","Квентин Тарантино"]'::jsonb, 1),
+                ('a1000001-0001-4000-8000-000000000012', 'cinema',
+                 'Как зовут главного героя «Назад в будущее»?',
+                 '["Марти Макфлай","Индиана Джонс","Люк Скайуокер","Форрест Гамп"]'::jsonb, 0),
+                ('a1000001-0001-4000-8000-000000000013', 'cinema',
+                 'Какой студии принадлежит «История игрушек»?',
+                 '["DreamWorks","Pixar","Illumination","Sony Pictures"]'::jsonb, 1),
+                ('a1000001-0001-4000-8000-000000000014', 'cinema',
+                 'Сколько полнометражных фильмов о Гарри Поттере вышло в основной серии?',
+                 '["6","7","8","9"]'::jsonb, 2),
+                ('a1000001-0001-4000-8000-000000000015', 'cinema',
+                 'Какой цвет у знаменитой таблетки в «Матрице», которую выбирает Нео?',
+                 '["Синий","Зелёный","Красный","Жёлтый"]'::jsonb, 2),
+
+                ('a1000001-0001-4000-8000-000000000021', 'art',
+                 'Кто написал «Мону Лизу»?',
+                 '["Микеланджело","Леонардо да Винчи","Рафаэль","Донателло"]'::jsonb, 1),
+                ('a1000001-0001-4000-8000-000000000022', 'art',
+                 'В каком музее хранится «Мона Лиза»?',
+                 '["Прадо","Эрмитаж","Лувр","Уффици"]'::jsonb, 2),
+                ('a1000001-0001-4000-8000-000000000023', 'art',
+                 'Какой художник отрезал себе ухо?',
+                 '["Пикассо","Ван Гог","Моне","Дали"]'::jsonb, 1),
+                ('a1000001-0001-4000-8000-000000000024', 'art',
+                 'Стиль, в котором работал Клод Моне, называют…',
+                 '["Кубизм","Сюрреализм","Импрессионизм","Барокко"]'::jsonb, 2),
+                ('a1000001-0001-4000-8000-000000000025', 'art',
+                 'Кто создал скульптуру «Давид»?',
+                 '["Бернини","Микеланджело","Роден","Донателло"]'::jsonb, 1),
+
+                ('a1000001-0001-4000-8000-000000000031', 'it',
+                 'Какой язык чаще всего выполняется в браузере?',
+                 '["Python","Java","JavaScript","Go"]'::jsonb, 2),
+                ('a1000001-0001-4000-8000-000000000032', 'it',
+                 'Что означает аббревиатура HTML?',
+                 '["HyperText Markup Language","High Tech Modern Language","Home Tool Markup List","Hyper Transfer Main Link"]'::jsonb, 0),
+                ('a1000001-0001-4000-8000-000000000033', 'it',
+                 'Какая компания создала операционную систему Android?',
+                 '["Apple","Microsoft","Google","IBM"]'::jsonb, 2),
+                ('a1000001-0001-4000-8000-000000000034', 'it',
+                 'Сколько бит в одном байте?',
+                 '["4","8","16","32"]'::jsonb, 1),
+                ('a1000001-0001-4000-8000-000000000035', 'it',
+                 'Какой протокол обычно используют для защищённых сайтов?',
+                 '["FTP","HTTP","HTTPS","SMTP"]'::jsonb, 2),
+
+                ('a1000001-0001-4000-8000-000000000041', 'science',
+                 'Какая планета ближе всего к Солнцу?',
+                 '["Венера","Земля","Меркурий","Марс"]'::jsonb, 2),
+                ('a1000001-0001-4000-8000-000000000042', 'science',
+                 'Химический символ воды?',
+                 '["CO2","H2O","O2","NaCl"]'::jsonb, 1),
+                ('a1000001-0001-4000-8000-000000000043', 'science',
+                 'Сколько хромосом у человека в норме?',
+                 '["23","42","46","48"]'::jsonb, 2),
+                ('a1000001-0001-4000-8000-000000000044', 'science',
+                 'Какая сила удерживает нас на Земле?',
+                 '["Магнетизм","Гравитация","Электричество","Инерция"]'::jsonb, 1),
+                ('a1000001-0001-4000-8000-000000000045', 'science',
+                 'Кто сформулировал теорию относительности?',
+                 '["Ньютон","Эйнштейн","Тесла","Галилей"]'::jsonb, 1)
+              ON CONFLICT DO NOTHING;

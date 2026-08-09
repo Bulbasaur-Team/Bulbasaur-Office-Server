@@ -86,3 +86,10 @@ databaseChangeLog:
   - include:
       file: changes/029-wardrobe-hat-non-la.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/030-bulba-quiz.yaml
+      relativeToChangelogFile: true
+
+  - include:
+      file: changes/031-quiz-real-questions.yaml
+      relativeToChangelogFile: true

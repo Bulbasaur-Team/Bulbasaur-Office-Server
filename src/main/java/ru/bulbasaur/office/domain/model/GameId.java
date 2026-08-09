@@ -15,7 +15,9 @@ public enum GameId {
     BULBA_COLORS("bulbacolors", Direction.HIGHER_BETTER),      // очки, лучший
     BULBA_SURKI("bulbasurki", Direction.HIGHER_BETTER),        // очки, лучший
     BULBA_GUESS("bulbaguess", Direction.HIGHER_BETTER, true),   // всего угаданных слов — накопительно
-    BULBA_WORDLE("bulbawordle", Direction.HIGHER_BETTER, true); // всего угаданных слов — накопительно
+    BULBA_WORDLE("bulbawordle", Direction.HIGHER_BETTER, true), // всего угаданных слов — накопительно
+    BULBA_QUIZ("bulbaquiz", Direction.HIGHER_BETTER);           // достигнутый уровень квиза
+
 
     private final String code;
     private final Direction direction;
