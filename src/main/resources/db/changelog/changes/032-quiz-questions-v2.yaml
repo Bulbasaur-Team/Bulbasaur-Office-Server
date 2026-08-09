@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: 32-quiz-questions-v2
+      author: bulba
+      comment: Rebuild quiz bank with improved, less guessable questions (~200 per topic)
+      changes:
+        - sqlFile:
+            path: quiz-seed/032-quiz-questions.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+            endDelimiter: ;

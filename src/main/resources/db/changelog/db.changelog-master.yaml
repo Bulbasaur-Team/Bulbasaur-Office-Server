@@ -93,3 +93,7 @@ databaseChangeLog:
   - include:
       file: changes/031-quiz-real-questions.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: changes/032-quiz-questions-v2.yaml
+      relativeToChangelogFile: true
