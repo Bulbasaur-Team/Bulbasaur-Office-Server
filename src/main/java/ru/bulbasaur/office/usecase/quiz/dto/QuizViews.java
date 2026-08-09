@@ -43,6 +43,7 @@ public final class QuizViews {
             QuestionView question,
             Instant deadlineAt,
             boolean correct,
+            Integer correctIndex,
             StateView state
     ) {
     }

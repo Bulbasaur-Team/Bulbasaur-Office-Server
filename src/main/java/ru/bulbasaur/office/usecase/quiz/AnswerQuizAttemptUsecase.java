@@ -37,14 +37,15 @@ public class AnswerQuizAttemptUsecase {
                 .orElseThrow(() -> new IllegalArgumentException("Тема не найдена"));
         QuizPlayerState state = helper.loadWithRegen(playerId, now);
 
+        QuizQuestion question = helper.requireQuestion(helper.currentQuestionId(attempt));
+
         if (answerTimedOut(attempt, optionIndex, now)) {
-            return fail(attempt, topic, state, playerId);
+            return fail(attempt, topic, state, playerId, question.getCorrectIndex());
         }
 
-        QuizQuestion question = helper.requireQuestion(helper.currentQuestionId(attempt));
         validateOption(attempt, question, optionIndex);
         if (optionIndex != question.getCorrectIndex()) {
-            return fail(attempt, topic, state, playerId);
+            return fail(attempt, topic, state, playerId, question.getCorrectIndex());
         }
 
         int nextIndex = attempt.getCurrentIndex() + 1;
@@ -72,7 +73,7 @@ public class AnswerQuizAttemptUsecase {
         quiz.saveAttempt(attempt);
 
         QuizQuestion next = helper.requireQuestion(attempt.getQuestionIds().get(nextIndex));
-        return buildView(playerId, attempt, topic, state, next, true);
+        return buildView(playerId, attempt, topic, state, next, true, null);
     }
 
     private QuizViews.AttemptView completeLevel(
@@ -95,18 +96,19 @@ public class AnswerQuizAttemptUsecase {
         quiz.saveState(state);
         submitScore.execute(playerId, login, GameId.BULBA_QUIZ, state.getLevel(), LB_LIMIT);
         eventLog.quizLevelReached(login, state.getLevel());
-        return buildView(playerId, attempt, topic, state, null, true);
+        return buildView(playerId, attempt, topic, state, null, true, null);
     }
 
     private QuizViews.AttemptView fail(
             QuizAttempt attempt,
             QuizTopic topic,
             QuizPlayerState state,
-            UUID playerId
+            UUID playerId,
+            int correctIndex
     ) {
         attempt.setStatus(QuizAttemptStatus.LOST);
         quiz.saveAttempt(attempt);
-        return buildView(playerId, attempt, topic, state, null, false);
+        return buildView(playerId, attempt, topic, state, null, false, correctIndex);
     }
 
     private QuizViews.AttemptView buildView(
@@ -115,7 +117,8 @@ public class AnswerQuizAttemptUsecase {
             QuizTopic topic,
             QuizPlayerState state,
             QuizQuestion question,
-            boolean correct
+            boolean correct,
+            Integer correctIndex
     ) {
         return QuizViews.AttemptView.builder()
                 .attemptId(attempt.getId())
@@ -127,6 +130,7 @@ public class AnswerQuizAttemptUsecase {
                 .question(question == null ? null : helper.toQuestionView(question, List.of()))
                 .deadlineAt(attempt.getQuestionDeadline())
                 .correct(correct)
+                .correctIndex(correctIndex)
                 .state(helper.toView(state, playerId))
                 .build();
     }
