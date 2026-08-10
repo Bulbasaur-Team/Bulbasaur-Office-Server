@@ -1,0 +1,48 @@
+databaseChangeLog:
+  - changeSet:
+      id: 33-player-quests
+      author: bulba
+      changes:
+        - createTable:
+            tableName: player_quests
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: player_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_player_quests_player
+                    references: players(id)
+                    deleteCascade: true
+              - column:
+                  name: quest_code
+                  type: varchar(40)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: started_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: completed_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: true
+        - addUniqueConstraint:
+            tableName: player_quests
+            columnNames: player_id, quest_code
+            constraintName: uq_player_quests_player_code

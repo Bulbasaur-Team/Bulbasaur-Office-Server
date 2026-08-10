@@ -97,3 +97,7 @@ databaseChangeLog:
   - include:
       file: changes/032-quiz-questions-v2.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: changes/033-player-quests.yaml
+      relativeToChangelogFile: true

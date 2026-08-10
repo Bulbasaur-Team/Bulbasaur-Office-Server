@@ -10,5 +10,6 @@ public enum BulbaCoinKind {
     WARDROBE_SELL,
     QUIZ_ENERGY_BUY,
     QUIZ_BOOSTER_BUY,
-    QUIZ_CHEST_REWARD
+    QUIZ_CHEST_REWARD,
+    QUEST_REWARD
 }

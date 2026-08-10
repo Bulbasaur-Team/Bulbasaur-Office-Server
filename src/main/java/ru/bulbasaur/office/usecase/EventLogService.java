@@ -88,6 +88,16 @@ public class EventLogService {
                 "Бульбазавр " + login + " открыл сундук и получил " + reward);
     }
 
+    public void questStarted(String login, String questTitle) {
+        log.append(INFO, "quest-service",
+                "Бульбазавр " + login + " начал квест «" + questTitle + "»");
+    }
+
+    public void questCompleted(String login, String questTitle) {
+        log.append(INFO, "quest-service",
+                "Бульбазавр " + login + " завершил квест «" + questTitle + "»");
+    }
+
     private static String gameTitle(GameId game) {
         return switch (game) {
             case BULBA_JUMP -> "Bulba Jump";

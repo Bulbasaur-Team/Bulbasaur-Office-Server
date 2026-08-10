@@ -9,6 +9,7 @@ import ru.bulbasaur.office.usecase.exception.InvalidCredentialsException;
 import ru.bulbasaur.office.usecase.exception.LoginAlreadyTakenException;
 import ru.bulbasaur.office.usecase.exception.PlayerNotFoundException;
 import ru.bulbasaur.office.usecase.exception.UnknownGameException;
+import ru.bulbasaur.office.usecase.exception.UnknownQuestException;
 import ru.bulbasaur.office.usecase.exception.WrongPasswordException;
 
 import java.util.stream.Collectors;
@@ -34,6 +35,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(UnknownGameException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ApiError handleUnknownGame(UnknownGameException e) {
+        return new ApiError(e.getMessage());
+    }
+
+    @ExceptionHandler(UnknownQuestException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ApiError handleUnknownQuest(UnknownQuestException e) {
         return new ApiError(e.getMessage());
     }
 
