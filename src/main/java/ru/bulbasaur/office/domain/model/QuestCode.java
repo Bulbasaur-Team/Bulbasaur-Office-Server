@@ -6,7 +6,8 @@ import java.util.Optional;
  * Квесты мультиплеера. Внешний код (client, path в REST) оперирует строковым {@code code}.
  */
 public enum QuestCode {
-    FRIDGE_PIN("fridge_pin", "Пинкод холодильника", "696967", 20_000L, "Квест «Пинкод холодильника»", 5);
+    FRIDGE_PIN("fridge_pin", "Пинкод холодильника", "696967", 20_000L, "Квест «Пинкод холодильника»", 5),
+    LOST_PACKAGE("lost_package", "Посылка не туда", "LOVESHOT", 15_000L, "Квест «Посылка не туда»", 10);
 
     private final String code;
     private final String title;
@@ -47,6 +48,14 @@ public enum QuestCode {
 
     public int minAchievements() {
         return minAchievements;
+    }
+
+    /** Другой квест, который должен быть COMPLETED, иначе этот заблокирован. */
+    public Optional<QuestCode> requiresCompleted() {
+        return switch (this) {
+            case LOST_PACKAGE -> Optional.of(FRIDGE_PIN);
+            default -> Optional.empty();
+        };
     }
 
     public static Optional<QuestCode> fromCode(String code) {

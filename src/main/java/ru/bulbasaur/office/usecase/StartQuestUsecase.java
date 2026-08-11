@@ -30,10 +30,10 @@ public class StartQuestUsecase {
         if (existing == QuestStatus.IN_PROGRESS) {
             return new QuestStatusView(quest.code(), QuestStatus.IN_PROGRESS);
         }
+        var owned = quests.findStatuses(playerId);
         int achievementCount = countOwnedAchievements.execute(playerId);
-        if (achievementCount < quest.minAchievements()) {
-            throw new IllegalArgumentException(
-                    "Квест пока недоступен: нужно минимум " + quest.minAchievements() + " ачивок");
+        if (!ListQuestsUsecase.prerequisitesMet(quest, owned, achievementCount)) {
+            throw new IllegalArgumentException(lockedMessage(quest));
         }
         if (quests.startIfAbsent(playerId, quest)) {
             players.findById(playerId)
@@ -41,5 +41,13 @@ public class StartQuestUsecase {
                     .ifPresent(login -> eventLog.questStarted(login, quest.title()));
         }
         return new QuestStatusView(quest.code(), QuestStatus.IN_PROGRESS);
+    }
+
+    private static String lockedMessage(QuestCode quest) {
+        if (quest.requiresCompleted().isPresent()) {
+            return "Квест пока недоступен: нужно пройти предыдущий квест и набрать минимум "
+                    + quest.minAchievements() + " ачивок";
+        }
+        return "Квест пока недоступен: нужно минимум " + quest.minAchievements() + " ачивок";
     }
 }

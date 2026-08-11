@@ -27,8 +27,8 @@ public class CompleteQuestUsecase {
 
     @Transactional
     public QuestCompleteView execute(UUID playerId, QuestCode quest, String pin) {
-        if (pin == null || !quest.pin().equals(pin.trim())) {
-            throw new IllegalArgumentException("Неверный пин-код");
+        if (pin == null || !quest.pin().equalsIgnoreCase(pin.trim())) {
+            throw new IllegalArgumentException("Неверный код");
         }
 
         QuestStatus existing = quests.findStatus(playerId, quest).orElse(QuestStatus.AVAILABLE);
@@ -38,8 +38,9 @@ public class CompleteQuestUsecase {
 
         // Завершить можно, если квест уже начат, либо если игрок достаточно «прокачан».
         if (existing != QuestStatus.IN_PROGRESS) {
+            var owned = quests.findStatuses(playerId);
             int achievementCount = countOwnedAchievements.execute(playerId);
-            if (achievementCount < quest.minAchievements()) {
+            if (!ListQuestsUsecase.prerequisitesMet(quest, owned, achievementCount)) {
                 throw new IllegalArgumentException(
                         "Квест пока недоступен: нужно минимум " + quest.minAchievements() + " ачивок");
             }

@@ -25,17 +25,28 @@ public class ListQuestsUsecase {
         Map<QuestCode, QuestStatus> owned = quests.findStatuses(playerId);
         int achievementCount = countOwnedAchievements.execute(playerId);
         return Arrays.stream(QuestCode.values())
-                .map(code -> new QuestStatusView(code.code(), resolveStatus(code, owned.get(code), achievementCount)))
+                .map(code -> new QuestStatusView(code.code(), resolveStatus(code, owned, achievementCount)))
                 .toList();
     }
 
-    static QuestStatus resolveStatus(QuestCode code, QuestStatus stored, int achievementCount) {
+    static QuestStatus resolveStatus(QuestCode code, Map<QuestCode, QuestStatus> owned, int achievementCount) {
+        QuestStatus stored = owned.get(code);
         if (stored == QuestStatus.COMPLETED || stored == QuestStatus.IN_PROGRESS) {
             return stored;
         }
-        if (achievementCount < code.minAchievements()) {
+        if (!prerequisitesMet(code, owned, achievementCount)) {
             return QuestStatus.LOCKED;
         }
         return QuestStatus.AVAILABLE;
+    }
+
+    /** Ачивки + опциональный завершённый предыдущий квест. */
+    static boolean prerequisitesMet(QuestCode code, Map<QuestCode, QuestStatus> owned, int achievementCount) {
+        if (achievementCount < code.minAchievements()) {
+            return false;
+        }
+        return code.requiresCompleted()
+                .map(req -> owned.get(req) == QuestStatus.COMPLETED)
+                .orElse(true);
     }
 }
