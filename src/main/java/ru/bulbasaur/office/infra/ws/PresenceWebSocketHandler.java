@@ -104,6 +104,7 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
                 case "pokerAddTask" -> poker.onAddTask(session, jsonMapper.treeToValue(node, PokerTaskMessage.class));
                 case "pokerVote" -> poker.onVote(session, jsonMapper.treeToValue(node, PokerVoteMessage.class));
                 case "pokerFinish" -> poker.onFinish(session);
+                case "pokerRevote" -> poker.onRevote(session);
                 case "pokerClose" -> poker.onClose(session);
                 case "retroList" -> retro.onList(session);
                 case "retroCreate" -> retro.onCreate(session, jsonMapper.treeToValue(node, RetroCreateMessage.class));

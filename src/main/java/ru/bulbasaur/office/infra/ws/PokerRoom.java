@@ -49,16 +49,20 @@ public class PokerRoom {
     private Double average;
     private Integer recommended;
 
-    public PokerRoom(String id, String name, UUID adminPlayerId, String adminLogin, long nowMillis) {
+    public PokerRoom(String id, String name, UUID adminPlayerId, String adminLogin, long closesAtMillis) {
         this.id = id;
         this.name = name;
         this.adminPlayerId = adminPlayerId;
         this.adminLogin = adminLogin;
-        this.closesAtMillis = nowMillis + TTL_MS;
+        this.closesAtMillis = closesAtMillis;
     }
 
     public String id() {
         return id;
+    }
+
+    public UUID idUuid() {
+        return UUID.fromString(id);
     }
 
     public String name() {
@@ -120,9 +124,30 @@ public class PokerRoom {
             return false;
         }
         if (currentTitle != null) {
-            done.add(new PokerStateOut.DoneTask(currentTitle, average, recommended));
+            done.add(PokerStateOut.DoneTask.builder()
+                    .title(currentTitle)
+                    .average(average)
+                    .recommended(recommended)
+                    .votes(List.of())
+                    .build());
         }
         currentTitle = title;
+        votes.clear();
+        revealed = false;
+        revealedVotes = List.of();
+        average = null;
+        recommended = null;
+        return true;
+    }
+
+    /**
+     * Переголосование по текущей задаче (только админ, карты уже вскрыты).
+     * Итог сбрасывается, голоса очищаются, задача остаётся той же.
+     */
+    public synchronized boolean revote(UUID playerId) {
+        if (!adminPlayerId.equals(playerId) || currentTitle == null || !revealed) {
+            return false;
+        }
         votes.clear();
         revealed = false;
         revealedVotes = List.of();
@@ -145,7 +170,11 @@ public class PokerRoom {
         for (Map.Entry<UUID, String> vote : votes.entrySet()) {
             Participant participant = participants.get(vote.getKey());
             if (participant != null) {
-                views.add(new PokerStateOut.Vote(participant.login(), participant.appearance(), vote.getValue()));
+                views.add(PokerStateOut.Vote.builder()
+                        .login(participant.login())
+                        .appearance(participant.appearance())
+                        .value(vote.getValue())
+                        .build());
             }
             records.add(new PokerVoteRecord(vote.getKey(), vote.getValue()));
         }
@@ -166,14 +195,32 @@ public class PokerRoom {
     public synchronized PokerStateOut stateFor(UUID playerId, long nowMillis) {
         List<PokerStateOut.Participant> list = new ArrayList<>();
         for (Participant p : participants.values()) {
-            list.add(new PokerStateOut.Participant(
-                    p.login(), p.appearance(), adminPlayerId.equals(p.playerId()), votes.containsKey(p.playerId())));
+            list.add(PokerStateOut.Participant.builder()
+                    .login(p.login())
+                    .appearance(p.appearance())
+                    .admin(adminPlayerId.equals(p.playerId()))
+                    .voted(votes.containsKey(p.playerId()))
+                    .build());
         }
         PokerStateOut.Current current = currentTitle == null ? null
-                : new PokerStateOut.Current(currentTitle, revealed, average, recommended, revealedVotes);
-        return PokerStateOut.of(
-                id, name, adminPlayerId.equals(playerId),
-                Math.max(0, closesAtMillis - nowMillis), votes.get(playerId),
-                list, current, List.copyOf(done));
+                : PokerStateOut.Current.builder()
+                        .title(currentTitle)
+                        .revealed(revealed)
+                        .average(average)
+                        .recommended(recommended)
+                        .votes(revealedVotes)
+                        .build();
+        return PokerStateOut.builder()
+                .type("pokerState")
+                .id(id)
+                .name(name)
+                .isAdmin(adminPlayerId.equals(playerId))
+                .readOnly(false)
+                .remainingMs(Math.max(0, closesAtMillis - nowMillis))
+                .myVote(votes.get(playerId))
+                .participants(list)
+                .current(current)
+                .tasks(List.copyOf(done))
+                .build();
     }
 }

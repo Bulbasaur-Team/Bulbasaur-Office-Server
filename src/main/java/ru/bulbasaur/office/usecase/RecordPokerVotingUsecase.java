@@ -6,7 +6,7 @@ import ru.bulbasaur.office.usecase.dto.PokerVoteRecord;
 import ru.bulbasaur.office.usecase.dto.PokerVotingResult;
 import ru.bulbasaur.office.usecase.dto.PokerVotingUpsert;
 import ru.bulbasaur.office.usecase.dto.RecordPokerVotingCommand;
-import ru.bulbasaur.office.usecase.port.out.PokerResultRepositoryPort;
+import ru.bulbasaur.office.usecase.port.out.PokerRepositoryPort;
 
 import java.util.List;
 
@@ -21,13 +21,18 @@ public class RecordPokerVotingUsecase {
 
     private static final int[] FIBONACCI = {0, 1, 2, 3, 5, 8, 13};
 
-    private final PokerResultRepositoryPort repository;
+    private final PokerRepositoryPort pokerPort;
 
     public PokerVotingResult execute(RecordPokerVotingCommand command) {
         PokerVotingResult result = summarize(command.votes());
-        repository.save(new PokerVotingUpsert(
-                command.roomName(), command.taskTitle(),
-                result.average(), result.recommended(), command.votes()));
+        pokerPort.save(PokerVotingUpsert.builder()
+                .roomId(command.roomId())
+                .roomName(command.roomName())
+                .taskTitle(command.taskTitle())
+                .average(result.average())
+                .recommended(result.recommended())
+                .votes(command.votes())
+                .build());
         return result;
     }
 

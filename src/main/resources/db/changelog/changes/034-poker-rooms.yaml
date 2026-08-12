@@ -1,0 +1,67 @@
+databaseChangeLog:
+  - changeSet:
+      id: 34-poker-rooms
+      author: bulba
+      changes:
+        - createTable:
+            tableName: poker_rooms
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(60)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: admin_player_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_poker_rooms_admin
+                    references: players(id)
+              - column:
+                  name: status
+                  type: varchar(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: closes_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: closed_at
+                  type: timestamp with time zone
+        - createIndex:
+            tableName: poker_rooms
+            indexName: idx_poker_rooms_status
+            columns:
+              - column:
+                  name: status
+        - addColumn:
+            tableName: poker_tasks
+            columns:
+              - column:
+                  name: room_id
+                  type: uuid
+                  constraints:
+                    foreignKeyName: fk_poker_tasks_room
+                    references: poker_rooms(id)
+                    deleteCascade: true
+        - createIndex:
+            tableName: poker_tasks
+            indexName: idx_poker_tasks_room
+            columns:
+              - column:
+                  name: room_id

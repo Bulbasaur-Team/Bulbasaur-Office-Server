@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
 import ru.bulbasaur.office.domain.model.Achievement;
+import ru.bulbasaur.office.domain.model.PokerSession;
 import ru.bulbasaur.office.infra.ws.PokerRegistry;
 import ru.bulbasaur.office.infra.ws.PokerRoom;
 import ru.bulbasaur.office.infra.ws.PresenceRegistry;
@@ -21,9 +22,16 @@ import ru.bulbasaur.office.usecase.GrantAchievementUsecase;
 import ru.bulbasaur.office.usecase.RecordPokerVotingUsecase;
 import ru.bulbasaur.office.usecase.dto.PokerVotingResult;
 import ru.bulbasaur.office.usecase.dto.RecordPokerVotingCommand;
+import ru.bulbasaur.office.usecase.poker.ClosePokerRoomUsecase;
+import ru.bulbasaur.office.usecase.poker.CreatePokerRoomUsecase;
+import ru.bulbasaur.office.usecase.poker.GetPokerRoomsUsecase;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /** Planning Poker: комнаты, голоса, вскрытие. */
 @Component
@@ -35,6 +43,9 @@ public class PokerWsHandler {
     private final PokerRegistry pokerRegistry;
     private final RecordPokerVotingUsecase recordPokerVoting;
     private final GrantAchievementUsecase grantAchievement;
+    private final CreatePokerRoomUsecase createRoom;
+    private final ClosePokerRoomUsecase closeRoom;
+    private final GetPokerRoomsUsecase getRooms;
     private final WsMessenger messenger;
 
     public void onList(WebSocketSession session) {
@@ -53,11 +64,13 @@ public class PokerWsHandler {
         if (name.length() > 60) {
             name = name.substring(0, 60);
         }
-        PokerRoom room = pokerRegistry.create(name, state.playerId(), state.login());
-        if (room == null) {
+        pokerRegistry.reconcile();
+        PokerSession created = createRoom.execute(name, state.playerId());
+        if (created == null) {
             messenger.send(session, PokerErrorOut.of("Слишком много активных комнат, попробуйте позже."));
             return;
         }
+        PokerRoom room = pokerRegistry.create(created, state.login());
         room.join(state.playerId(), state.login(), state.appearance(), session);
         messenger.send(session, room.stateFor(state.playerId(), System.currentTimeMillis()));
     }
@@ -138,12 +151,28 @@ public class PokerWsHandler {
         }
         try {
             PokerVotingResult result = recordPokerVoting.execute(
-                    new RecordPokerVotingCommand(room.name(), finished.title(), finished.votes()));
+                    RecordPokerVotingCommand.builder()
+                            .roomId(room.idUuid())
+                            .roomName(room.name())
+                            .taskTitle(finished.title())
+                            .votes(finished.votes())
+                            .build());
             room.setResult(result.average(), result.recommended());
         } catch (Exception e) {
             log.error("не удалось сохранить результат покера для комнаты {}", room.id(), e);
         }
         broadcastPokerState(room);
+    }
+
+    public void onRevote(WebSocketSession session) {
+        PokerRoom room = pokerRoomOf(session);
+        PresenceState state = registry.get(session.getId());
+        if (room == null || state == null) {
+            return;
+        }
+        if (room.revote(state.playerId())) {
+            broadcastPokerState(room);
+        }
     }
 
     public void onClose(WebSocketSession session) {
@@ -152,6 +181,7 @@ public class PokerWsHandler {
         if (room == null || state == null || !room.isAdmin(state.playerId())) {
             return;
         }
+        closeRoom.execute(room.idUuid());
         pokerRegistry.remove(room.id());
         for (PokerRoom.Participant participant : room.participantsSnapshot()) {
             messenger.send(participant.session(), PokerClosedOut.of(room.id()));
@@ -171,10 +201,33 @@ public class PokerWsHandler {
     }
 
     private PokerRoomsOut roomsOut() {
-        List<PokerRoomsOut.Room> rooms = pokerRegistry.active().stream()
-                .map(r -> new PokerRoomsOut.Room(r.id(), r.name(), r.adminLogin(), r.participantCount()))
+        pokerRegistry.reconcile();
+        List<PokerRoomsOut.Room> active = pokerRegistry.active().stream()
+                .map(r -> PokerRoomsOut.Room.builder()
+                        .id(r.id())
+                        .name(r.name())
+                        .adminLogin(r.adminLogin())
+                        .participants(r.participantCount())
+                        .build())
                 .toList();
-        return PokerRoomsOut.of(rooms);
+
+        List<PokerRoomsOut.HistoryRoom> history = new ArrayList<>();
+        List<PokerSession> closed = getRooms.findClosedRooms();
+        Set<UUID> adminIds = closed.stream().map(PokerSession::getAdminPlayerId).collect(Collectors.toSet());
+        Map<UUID, String> logins = getRooms.loginMap(adminIds);
+        for (PokerSession e : closed) {
+            history.add(PokerRoomsOut.HistoryRoom.builder()
+                    .id(e.getId().toString())
+                    .name(e.getName())
+                    .adminLogin(logins.getOrDefault(e.getAdminPlayerId(), "?"))
+                    .closedAt(e.closedAtOrClosesAt().toEpochMilli())
+                    .build());
+        }
+        return PokerRoomsOut.builder()
+                .type("pokerRooms")
+                .active(active)
+                .history(history)
+                .build();
     }
 
     private void broadcastPokerState(PokerRoom room) {

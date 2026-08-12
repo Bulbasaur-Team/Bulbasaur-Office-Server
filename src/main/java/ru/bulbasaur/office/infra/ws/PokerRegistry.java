@@ -1,41 +1,45 @@
 package ru.bulbasaur.office.infra.ws;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import ru.bulbasaur.office.domain.model.PokerSession;
+import ru.bulbasaur.office.usecase.poker.ClosePokerRoomUsecase;
 
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Реестр покер-комнат. Эфемерный, как {@link PresenceRegistry}: комнаты живут в
- * памяти, в БД уходят только результаты голосований. Истёкшие комнаты (TTL 2 часа)
- * вычищаются лениво — при любом обращении; открытые клиенты закрывают их сами по
- * таймеру, который сервер отдаёт в каждом pokerState (remainingMs).
+ * Реестр активных покер-комнат. Живое голосование — в памяти; в БД уходят
+ * карточка комнаты и результаты. Истёкшие и «осиротевшие» после рестарта
+ * комнаты закрываются лениво при обращении.
  */
 @Component
+@RequiredArgsConstructor
 public class PokerRegistry {
 
-    private static final int MAX_ROOMS = 20;
-
+    private final ClosePokerRoomUsecase closeRoom;
     private final Map<String, PokerRoom> rooms = new ConcurrentHashMap<>();
 
-    /** Активные комнаты для лобби (истёкшие по пути удаляются). */
+    /** Активные комнаты для лобби (истёкшие по пути закрываются). */
     public List<PokerRoom> active() {
-        long now = System.currentTimeMillis();
-        rooms.values().removeIf(room -> room.isExpired(now));
+        expireStale();
         return rooms.values().stream()
                 .sorted(Comparator.comparing(PokerRoom::name))
                 .toList();
     }
 
-    public PokerRoom create(String name, UUID adminPlayerId, String adminLogin) {
-        if (active().size() >= MAX_ROOMS) {
-            return null;
-        }
+    public PokerRoom create(PokerSession session, String adminLogin) {
         PokerRoom room = new PokerRoom(
-                UUID.randomUUID().toString(), name, adminPlayerId, adminLogin, System.currentTimeMillis());
+                session.getId().toString(),
+                session.getName(),
+                session.getAdminPlayerId(),
+                adminLogin,
+                session.getClosesAt().toEpochMilli());
         rooms.put(room.id(), room);
         return room;
     }
@@ -44,12 +48,8 @@ public class PokerRegistry {
         if (roomId == null) {
             return null;
         }
-        PokerRoom room = rooms.get(roomId);
-        if (room != null && room.isExpired(System.currentTimeMillis())) {
-            rooms.remove(roomId);
-            return null;
-        }
-        return room;
+        expireStale();
+        return rooms.get(roomId);
     }
 
     /** Комната, в которой игрок сейчас участвует (или null). */
@@ -64,5 +64,29 @@ public class PokerRegistry {
 
     public void remove(String roomId) {
         rooms.remove(roomId);
+    }
+
+    public Set<UUID> liveIds() {
+        Set<UUID> ids = new HashSet<>();
+        for (String id : rooms.keySet()) {
+            ids.add(UUID.fromString(id));
+        }
+        return ids;
+    }
+
+    /** Закрыть истёкшие в памяти и осиротевшие в БД (лобби / создание комнаты). */
+    public void reconcile() {
+        expireStale();
+        closeRoom.reconcile(liveIds());
+    }
+
+    private void expireStale() {
+        long now = System.currentTimeMillis();
+        for (PokerRoom room : List.copyOf(rooms.values())) {
+            if (room.isExpired(now)) {
+                rooms.remove(room.id());
+                closeRoom.execute(room.idUuid());
+            }
+        }
     }
 }

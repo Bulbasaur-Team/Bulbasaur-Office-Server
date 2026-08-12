@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.bulbasaur.office.usecase.exception.InvalidCredentialsException;
 import ru.bulbasaur.office.usecase.exception.LoginAlreadyTakenException;
 import ru.bulbasaur.office.usecase.exception.PlayerNotFoundException;
+import ru.bulbasaur.office.usecase.exception.PokerRoomActiveException;
+import ru.bulbasaur.office.usecase.exception.PokerRoomNotFoundException;
 import ru.bulbasaur.office.usecase.exception.UnknownGameException;
 import ru.bulbasaur.office.usecase.exception.UnknownQuestException;
 import ru.bulbasaur.office.usecase.exception.WrongPasswordException;
@@ -47,6 +49,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(PlayerNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ApiError handlePlayerNotFound(PlayerNotFoundException e) {
+        return new ApiError(e.getMessage());
+    }
+
+    @ExceptionHandler(PokerRoomNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ApiError handlePokerRoomNotFound(PokerRoomNotFoundException e) {
+        return new ApiError(e.getMessage());
+    }
+
+    @ExceptionHandler(PokerRoomActiveException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ApiError handlePokerRoomActive(PokerRoomActiveException e) {
         return new ApiError(e.getMessage());
     }
 

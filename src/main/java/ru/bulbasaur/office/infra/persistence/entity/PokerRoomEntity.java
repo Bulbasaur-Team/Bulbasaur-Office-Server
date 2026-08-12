@@ -11,24 +11,27 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "poker_tasks")
+@Table(name = "poker_rooms")
 @Getter
 @Setter
 @NoArgsConstructor
-public class PokerTaskEntity {
+public class PokerRoomEntity {
+
+    public static final String STATUS_ACTIVE = "ACTIVE";
+    public static final String STATUS_CLOSED = "CLOSED";
 
     @Id
     private UUID id;
 
-    private UUID roomId;
+    private String name;
 
-    private String roomName;
+    private UUID adminPlayerId;
 
-    private String title;
-
-    private Double average;
-
-    private Integer recommended;
+    private String status;
 
     private Instant createdAt;
+
+    private Instant closesAt;
+
+    private Instant closedAt;
 }

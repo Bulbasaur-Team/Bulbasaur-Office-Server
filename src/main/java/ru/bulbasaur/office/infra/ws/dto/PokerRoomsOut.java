@@ -1,14 +1,18 @@
 package ru.bulbasaur.office.infra.ws.dto;
 
+import lombok.Builder;
+
 import java.util.List;
 
-/** Список активных покер-комнат — ответ на pokerList. */
-public record PokerRoomsOut(String type, List<Room> rooms) {
+/** Список активных и прошедших покер-комнат — ответ на pokerList. */
+@Builder
+public record PokerRoomsOut(String type, List<Room> active, List<HistoryRoom> history) {
 
+    @Builder
     public record Room(String id, String name, String adminLogin, int participants) {
     }
 
-    public static PokerRoomsOut of(List<Room> rooms) {
-        return new PokerRoomsOut("pokerRooms", rooms);
+    @Builder
+    public record HistoryRoom(String id, String name, String adminLogin, long closedAt) {
     }
 }

@@ -101,3 +101,6 @@ databaseChangeLog:
   - include:
       file: changes/033-player-quests.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/034-poker-rooms.yaml
+      relativeToChangelogFile: true
