@@ -36,8 +36,11 @@ public class AnswerQuizAttemptUsecase {
         QuizTopic topic = quiz.findTopic(attempt.getTopicCode())
                 .orElseThrow(() -> new IllegalArgumentException("Тема не найдена"));
         QuizPlayerState state = helper.loadWithRegen(playerId, now);
-
         QuizQuestion question = helper.requireQuestion(helper.currentQuestionId(attempt));
+
+        if (topic.isStory()) {
+            return answerStory(playerId, attempt, topic, state, question, optionIndex, now);
+        }
 
         if (answerTimedOut(attempt, optionIndex, now)) {
             return fail(attempt, topic, state, playerId, question.getCorrectIndex());
@@ -52,7 +55,38 @@ public class AnswerQuizAttemptUsecase {
         if (nextIndex >= attempt.getQuestionIds().size()) {
             return completeLevel(playerId, login, attempt, topic, state, nextIndex);
         }
-        return advanceToNextQuestion(playerId, attempt, topic, state, nextIndex, now);
+        return advanceToNextQuestion(playerId, attempt, topic, state, nextIndex, now, true, null);
+    }
+
+    private QuizViews.AttemptView answerStory(
+            UUID playerId,
+            QuizAttempt attempt,
+            QuizTopic topic,
+            QuizPlayerState state,
+            QuizQuestion question,
+            int optionIndex,
+            Instant now
+    ) {
+        boolean timedOut = answerTimedOut(attempt, optionIndex, now);
+        boolean correct = !timedOut && optionIndex == question.getCorrectIndex();
+        if (!timedOut) {
+            validateOption(attempt, question, optionIndex);
+        }
+        if (correct) {
+            attempt.setCorrectCount(attempt.getCorrectCount() + 1);
+        }
+
+        int nextIndex = attempt.getCurrentIndex() + 1;
+        Integer revealCorrect = correct ? null : question.getCorrectIndex();
+        if (nextIndex >= attempt.getQuestionIds().size()) {
+            boolean passed = attempt.getCorrectCount() >= StoryQuizConstants.PASS_MIN;
+            attempt.setStatus(passed ? QuizAttemptStatus.WON : QuizAttemptStatus.LOST);
+            attempt.setCurrentIndex(nextIndex);
+            attempt.setFiftyMasked(null);
+            quiz.saveAttempt(attempt);
+            return buildView(playerId, attempt, topic, state, null, correct, revealCorrect);
+        }
+        return advanceToNextQuestion(playerId, attempt, topic, state, nextIndex, now, correct, revealCorrect);
     }
 
     private QuizViews.AttemptView advanceToNextQuestion(
@@ -61,7 +95,9 @@ public class AnswerQuizAttemptUsecase {
             QuizTopic topic,
             QuizPlayerState state,
             int nextIndex,
-            Instant now
+            Instant now,
+            boolean correct,
+            Integer correctIndex
     ) {
         attempt.setCurrentIndex(nextIndex);
         attempt.setFiftyMasked(null);
@@ -73,7 +109,7 @@ public class AnswerQuizAttemptUsecase {
         quiz.saveAttempt(attempt);
 
         QuizQuestion next = helper.requireQuestion(attempt.getQuestionIds().get(nextIndex));
-        return buildView(playerId, attempt, topic, state, next, true, null);
+        return buildView(playerId, attempt, topic, state, next, correct, correctIndex);
     }
 
     private QuizViews.AttemptView completeLevel(
@@ -126,7 +162,9 @@ public class AnswerQuizAttemptUsecase {
                 .topicName(topic.getName())
                 .status(attempt.getStatus().name())
                 .currentIndex(attempt.getCurrentIndex())
-                .totalQuestions(QuizConstants.QUESTIONS_PER_ATTEMPT)
+                .totalQuestions(attempt.getQuestionIds().size())
+                .correctCount(attempt.getCorrectCount())
+                .story(topic.isStory())
                 .question(question == null ? null : helper.toQuestionView(question, List.of()))
                 .deadlineAt(attempt.getQuestionDeadline())
                 .correct(correct)

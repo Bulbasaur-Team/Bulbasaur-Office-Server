@@ -104,3 +104,12 @@ databaseChangeLog:
   - include:
       file: changes/034-poker-rooms.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/035-reset-player-quests.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/036-player-presentation-deck.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/037-quantum-quiz-story.yaml
+      relativeToChangelogFile: true

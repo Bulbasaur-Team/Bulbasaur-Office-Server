@@ -34,6 +34,9 @@ public class UseQuizBoosterUsecase {
         QuizAttempt attempt = requireActive(playerId, attemptId);
         QuizTopic topic = quiz.findTopic(attempt.getTopicCode())
                 .orElseThrow(() -> new IllegalArgumentException("Тема не найдена"));
+        if (topic.isStory()) {
+            throw new IllegalArgumentException("В сюжетном тесте бустеры недоступны");
+        }
         QuizPlayerState state = helper.loadWithRegen(playerId, now);
 
         if (now.isAfter(attempt.getQuestionDeadline().plus(QuizConstants.ANSWER_GRACE))) {
@@ -126,7 +129,9 @@ public class UseQuizBoosterUsecase {
                 .topicName(topic.getName())
                 .status(attempt.getStatus().name())
                 .currentIndex(attempt.getCurrentIndex())
-                .totalQuestions(QuizConstants.QUESTIONS_PER_ATTEMPT)
+                .totalQuestions(attempt.getQuestionIds().size())
+                .correctCount(attempt.getCorrectCount())
+                .story(topic.isStory())
                 .question(helper.toQuestionView(question, masked))
                 .deadlineAt(attempt.getQuestionDeadline())
                 .correct(false)

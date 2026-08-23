@@ -122,6 +122,7 @@ public class QuizConnector implements QuizRepositoryPort {
                 .code(entity.getCode())
                 .name(entity.getName())
                 .sortOrder(entity.getSortOrder())
+                .story(entity.isStory())
                 .build();
     }
 
@@ -172,6 +173,7 @@ public class QuizConnector implements QuizRepositoryPort {
                 .fiftyMasked(entity.getFiftyMasked() == null ? null : List.copyOf(entity.getFiftyMasked()))
                 .questionDeadline(entity.getQuestionDeadline())
                 .createdAt(entity.getCreatedAt())
+                .correctCount(entity.getCorrectCount())
                 .build();
     }
 
@@ -186,6 +188,7 @@ public class QuizConnector implements QuizRepositoryPort {
         entity.setFiftyMasked(attempt.getFiftyMasked() == null ? null : List.copyOf(attempt.getFiftyMasked()));
         entity.setQuestionDeadline(attempt.getQuestionDeadline());
         entity.setCreatedAt(attempt.getCreatedAt());
+        entity.setCorrectCount(attempt.getCorrectCount());
         return entity;
     }
 }

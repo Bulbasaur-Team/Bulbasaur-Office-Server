@@ -43,7 +43,8 @@ public class RecheckAchievementsUsecase {
             Achievement.VOLLEYBALL, Achievement.TENNIS, Achievement.LOVER, Achievement.DAY_CHAMPION,
             Achievement.CHEATER, Achievement.CROUPIER, Achievement.DEMOCRACY, Achievement.COFFEEMAN,
             Achievement.HOCKEY, Achievement.OVECHKIN, Achievement.SPEAKER, Achievement.MEOW,
-            Achievement.TRADER, Achievement.SYSADMIN, Achievement.CAREFUL, Achievement.SOCIAL);
+            Achievement.TRADER, Achievement.SYSADMIN, Achievement.CAREFUL, Achievement.SOCIAL,
+            Achievement.DAY_X);
 
     private final AchievementRepositoryPort achievements;
     private final LeaderboardRepositoryPort leaderboard;
@@ -78,7 +79,8 @@ public class RecheckAchievementsUsecase {
         return switch (achievement) {
             case BULBAZAVR -> true;
             case VOLLEYBALL, TENNIS, LOVER, DAY_CHAMPION, CHEATER, CROUPIER, DEMOCRACY,
-                 COFFEEMAN, HOCKEY, OVECHKIN, SPEAKER, MEOW, TRADER, SYSADMIN, CAREFUL, SOCIAL
+                 COFFEEMAN, HOCKEY, OVECHKIN, SPEAKER, MEOW, TRADER, SYSADMIN, CAREFUL, SOCIAL,
+                 DAY_X
                     -> false;
             case JUMPER -> hasEntry(playerId, GameId.BULBA_JUMP);
             case JUMPER_10K -> reached(playerId, GameId.BULBA_JUMP, JUMPER_SCORE);

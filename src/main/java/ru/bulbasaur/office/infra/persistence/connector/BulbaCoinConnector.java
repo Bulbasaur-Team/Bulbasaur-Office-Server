@@ -48,6 +48,27 @@ public class BulbaCoinConnector implements BulbaCoinRepositoryPort {
 
     @Override
     @Transactional(readOnly = true)
+    public boolean existsLedger(UUID playerId, BulbaCoinKind kind, String ref) {
+        return ledger.existsByPlayerIdAndKindAndRef(playerId, kind.name(), ref);
+    }
+
+    @Override
+    @Transactional
+    public boolean removeLedgerRefunding(UUID playerId, BulbaCoinKind kind, String ref) {
+        return ledger.findByPlayerIdAndKindAndRef(playerId, kind.name(), ref)
+                .map(row -> {
+                    long refund = -row.getAmount();
+                    if (refund > 0) {
+                        players.addBalance(playerId, refund);
+                    }
+                    ledger.delete(row);
+                    return true;
+                })
+                .orElse(false);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<BulbaCoinTransactionView> history(UUID playerId, Instant before, int limit) {
         List<BulbaCoinLedgerEntity> rows = before == null
                 ? ledger.findHistory(playerId, PageRequest.of(0, limit))

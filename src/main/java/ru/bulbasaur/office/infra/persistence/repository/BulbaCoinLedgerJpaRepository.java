@@ -8,6 +8,7 @@ import ru.bulbasaur.office.infra.persistence.entity.BulbaCoinLedgerEntity;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface BulbaCoinLedgerJpaRepository extends JpaRepository<BulbaCoinLedgerEntity, UUID> {
@@ -41,4 +42,8 @@ public interface BulbaCoinLedgerJpaRepository extends JpaRepository<BulbaCoinLed
     List<BulbaCoinLedgerEntity> findHistoryBefore(@Param("playerId") UUID playerId,
                                                   @Param("before") Instant before,
                                                   org.springframework.data.domain.Pageable pageable);
+
+    boolean existsByPlayerIdAndKindAndRef(UUID playerId, String kind, String ref);
+
+    Optional<BulbaCoinLedgerEntity> findByPlayerIdAndKindAndRef(UUID playerId, String kind, String ref);
 }
