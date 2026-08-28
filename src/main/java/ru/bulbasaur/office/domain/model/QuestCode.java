@@ -3,11 +3,20 @@ package ru.bulbasaur.office.domain.model;
 import java.util.Optional;
 
 /**
- * Квесты мультиплеера. Внешний код (client, path в REST) оперирует строковым {@code code}.
+ * Квесты сюжета. Внешний код (client, path в REST) оперирует строковым {@code code}.
+ * Пройти можно только по порядку: каждый квест после первого требует предыдущий COMPLETED.
  */
 public enum QuestCode {
-    FRIDGE_PIN("fridge_pin", "Пинкод холодильника", "696967", 20_000L, "Квест «Пинкод холодильника»", 5),
-    LOST_PACKAGE("lost_package", "Посылка не туда", "LOVESHOT", 15_000L, "Квест «Посылка не туда»", 10);
+    PROLOGUE("prologue", "Пролог", "", 0L, "", 0),
+    ADAPTATION("adaptation", "Адаптация", "", 0L, "", 3),
+    FRIDGE_PIN("fridge_pin", "Пинкод холодильника", "696967", 10_000L, "Квест «Пинкод холодильника»", 5),
+    GREEN_ALERT("green_alert", "Зелёный дашборд", "GREEN", 5_000L, "Квест «Зелёный дашборд»", 5),
+    LOST_PACKAGE("lost_package", "Посылка не туда", "LOVESHOT", 8_000L, "Квест «Посылка не туда»", 10),
+    STRATEGY("strategy", "Стратегическое планирование", "", 0L, "", 10),
+    RECONCILIATION("reconciliation", "Сверка", "", 0L, "", 10),
+    PRESENTATION("presentation", "Сборка презентации", "", 0L, "", 10),
+    QUANTUM("quantum", "Квантовая физика", "", 0L, "", 10),
+    DAY_X("day_x", "День X", "", 20_000L, "Квест «День X»", 10);
 
     private final String code;
     private final String title;
@@ -50,10 +59,26 @@ public enum QuestCode {
         return minAchievements;
     }
 
+    public boolean hasSecret() {
+        return pin != null && !pin.isBlank();
+    }
+
+    public boolean hasReward() {
+        return rewardBc > 0;
+    }
+
     /** Другой квест, который должен быть COMPLETED, иначе этот заблокирован. */
     public Optional<QuestCode> requiresCompleted() {
         return switch (this) {
-            case LOST_PACKAGE -> Optional.of(FRIDGE_PIN);
+            case ADAPTATION -> Optional.of(PROLOGUE);
+            case FRIDGE_PIN -> Optional.of(ADAPTATION);
+            case GREEN_ALERT -> Optional.of(FRIDGE_PIN);
+            case LOST_PACKAGE -> Optional.of(GREEN_ALERT);
+            case STRATEGY -> Optional.of(LOST_PACKAGE);
+            case RECONCILIATION -> Optional.of(STRATEGY);
+            case PRESENTATION -> Optional.of(RECONCILIATION);
+            case QUANTUM -> Optional.of(PRESENTATION);
+            case DAY_X -> Optional.of(QUANTUM);
             default -> Optional.empty();
         };
     }

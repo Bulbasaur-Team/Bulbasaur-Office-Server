@@ -22,4 +22,7 @@ public class QuizTopicEntity {
 
     @Column(name = "sort_order")
     private int sortOrder;
+
+    @Column(nullable = false)
+    private boolean story;
 }

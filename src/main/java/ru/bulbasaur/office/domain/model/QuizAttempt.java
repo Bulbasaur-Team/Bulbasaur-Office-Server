@@ -24,4 +24,5 @@ public class QuizAttempt {
     private List<Integer> fiftyMasked;
     private Instant questionDeadline;
     private Instant createdAt;
+    private int correctCount;
 }

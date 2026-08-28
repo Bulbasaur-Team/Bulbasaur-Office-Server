@@ -19,5 +19,13 @@ public interface BulbaCoinRepositoryPort {
 
     long balanceOf(UUID playerId);
 
+    boolean existsLedger(UUID playerId, BulbaCoinKind kind, String ref);
+
+    /**
+     * Удалить запись журнала и вернуть списанную сумму на баланс (для debit amount &lt; 0).
+     * @return true, если запись была и удалена
+     */
+    boolean removeLedgerRefunding(UUID playerId, BulbaCoinKind kind, String ref);
+
     List<BulbaCoinTransactionView> history(UUID playerId, Instant before, int limit);
 }

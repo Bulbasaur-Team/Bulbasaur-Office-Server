@@ -12,4 +12,5 @@ public class QuizTopic {
     private final String code;
     private final String name;
     private final int sortOrder;
+    private final boolean story;
 }

@@ -1,6 +1,5 @@
 package ru.bulbasaur.office.infra.rest.dto;
 
-import jakarta.validation.constraints.NotBlank;
-
-public record CompleteQuestRequest(@NotBlank String pin) {
+/** Код/пин квеста. Для сюжетных квестов без секрета может быть пустым. */
+public record CompleteQuestRequest(String pin) {
 }

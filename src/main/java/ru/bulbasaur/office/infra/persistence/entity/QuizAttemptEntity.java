@@ -50,4 +50,7 @@ public class QuizAttemptEntity {
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
+
+    @Column(name = "correct_count", nullable = false)
+    private int correctCount;
 }

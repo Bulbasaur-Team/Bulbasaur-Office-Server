@@ -43,7 +43,8 @@ public enum Achievement {
     TRADER("trader", "Трейдер", "Посмотреть графики в комнате мониторинга"),
     SYSADMIN("sysadmin", "Сисадмин", "Посмотреть логи"),
     CAREFUL("careful", "Осторожный", "Поменять пароль"),
-    SOCIAL("social", "Социальный", "Посмотреть список игроков");
+    SOCIAL("social", "Социальный", "Посмотреть список игроков"),
+    DAY_X("day_x", "День X", "Пройти сюжет игры");
 
     private final String code;
     private final String title;

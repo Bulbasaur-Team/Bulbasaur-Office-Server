@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      id: 35-reset-player-quests
+      author: bulba
+      comment: >
+        Сюжет «День X»: два старых квеста входят в общую последовательность
+        и больше не в начале. Сбрасываем прогресс, чтобы все прошли сюжет по порядку.
+      changes:
+        - delete:
+            tableName: player_quests

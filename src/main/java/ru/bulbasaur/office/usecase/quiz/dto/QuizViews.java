@@ -40,6 +40,8 @@ public final class QuizViews {
             String status,
             int currentIndex,
             int totalQuestions,
+            int correctCount,
+            boolean story,
             QuestionView question,
             Instant deadlineAt,
             boolean correct,

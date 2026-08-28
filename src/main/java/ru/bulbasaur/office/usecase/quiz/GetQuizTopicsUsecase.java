@@ -24,7 +24,9 @@ public class GetQuizTopicsUsecase {
     public List<QuizViews.TopicView> execute(UUID playerId) {
         QuizPlayerState state = quiz.getOrCreateState(playerId);
         int levelToPlay = state.getLevel() + 1;
-        List<QuizTopic> topics = new ArrayList<>(quiz.topics());
+        List<QuizTopic> topics = new ArrayList<>(quiz.topics().stream()
+                .filter(topic -> !topic.isStory())
+                .toList());
 
         // Порядок зависит только от номера уровня и стабильного порядка тем из БД.
         // Повторное открытие уровня всегда возвращает ту же тройку.
