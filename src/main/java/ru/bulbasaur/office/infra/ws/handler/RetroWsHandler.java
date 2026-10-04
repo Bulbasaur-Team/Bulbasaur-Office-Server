@@ -22,6 +22,7 @@ import ru.bulbasaur.office.infra.ws.dto.RetroJoinMessage;
 import ru.bulbasaur.office.infra.ws.dto.RetroMoodMessage;
 import ru.bulbasaur.office.infra.ws.dto.RetroMoveStickerMessage;
 import ru.bulbasaur.office.infra.ws.dto.RetroReactMessage;
+import ru.bulbasaur.office.infra.ws.dto.RetroTimerStartMessage;
 import ru.bulbasaur.office.infra.ws.dto.RetroRoomsOut;
 import ru.bulbasaur.office.infra.ws.dto.RetroStateOut;
 import ru.bulbasaur.office.usecase.retro.AddRetroStickerUsecase;
@@ -243,6 +244,48 @@ public class RetroWsHandler {
                 room.idUuid(), msg.targetType(), targetId, state.playerId(), msg.emoji()));
     }
 
+    public void onTimerStart(WebSocketSession session, RetroTimerStartMessage msg) {
+        RetroRoom room = retroRoomOf(session);
+        PresenceState state = registry.get(session.getId());
+        if (room == null || state == null) {
+            return;
+        }
+        if (!room.isAdmin(state.playerId())) {
+            messenger.send(session, RetroErrorOut.of("Только ведущий может запустить таймер."));
+            return;
+        }
+        Double minutes = msg == null ? null : msg.minutes();
+        if (minutes == null || minutes.isNaN() || minutes.isInfinite() || minutes <= 0) {
+            messenger.send(session, RetroErrorOut.of("Укажите длительность таймера в минутах."));
+            return;
+        }
+        double ms = minutes * 60_000d;
+        if (ms < 1000d) {
+            messenger.send(session, RetroErrorOut.of("Таймер слишком короткий."));
+            return;
+        }
+        if (ms > 7d * 24 * 60 * 60 * 1000d) {
+            messenger.send(session, RetroErrorOut.of("Слишком длинный таймер."));
+            return;
+        }
+        room.startTimer(Math.round(ms), System.currentTimeMillis());
+        broadcastState(room);
+    }
+
+    public void onTimerStop(WebSocketSession session) {
+        RetroRoom room = retroRoomOf(session);
+        PresenceState state = registry.get(session.getId());
+        if (room == null || state == null) {
+            return;
+        }
+        if (!room.isAdmin(state.playerId())) {
+            messenger.send(session, RetroErrorOut.of("Только ведущий может остановить таймер."));
+            return;
+        }
+        room.stopTimer();
+        broadcastState(room);
+    }
+
     public void onDeleteMeme(WebSocketSession session, RetroDeleteMemeMessage msg) {
         RetroRoom room = retroRoomOf(session);
         PresenceState state = registry.get(session.getId());
@@ -336,16 +379,19 @@ public class RetroWsHandler {
     private RetroStateOut stateFor(RetroRoom room, UUID viewerId) {
         RetroRoomEntity entity = getRooms.findRoom(room.idUuid()).orElse(null);
         if (entity == null) {
+            long now = System.currentTimeMillis();
             return RetroStateOut.of(
                     room.id(), room.name(), room.isAdmin(viewerId), false,
-                    room.remainingMs(System.currentTimeMillis()),
+                    room.remainingMs(now), room.timerRemainingMs(now),
                     List.of(), List.of(), Map.of(), List.of());
         }
+        long now = System.currentTimeMillis();
         return buildState.execute(
                 entity,
                 viewerId,
                 room.participantsSnapshot(),
-                room.remainingMs(System.currentTimeMillis()),
+                room.remainingMs(now),
+                room.timerRemainingMs(now),
                 false);
     }
 }

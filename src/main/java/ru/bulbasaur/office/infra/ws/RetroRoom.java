@@ -24,6 +24,8 @@ public class RetroRoom {
     private final UUID adminPlayerId;
     private final String adminLogin;
     private final long closesAtMillis;
+    /** 0 — таймер ведущего не запущен. */
+    private long timerEndsAtMillis;
 
     private final Map<UUID, Participant> participants = new LinkedHashMap<>();
 
@@ -93,5 +95,25 @@ public class RetroRoom {
 
     public long remainingMs(long nowMillis) {
         return Math.max(0, closesAtMillis - nowMillis);
+    }
+
+    public synchronized void startTimer(long durationMs, long nowMillis) {
+        timerEndsAtMillis = nowMillis + durationMs;
+    }
+
+    public synchronized void stopTimer() {
+        timerEndsAtMillis = 0;
+    }
+
+    public synchronized long timerRemainingMs(long nowMillis) {
+        if (timerEndsAtMillis == 0) {
+            return 0;
+        }
+        long left = timerEndsAtMillis - nowMillis;
+        if (left <= 0) {
+            timerEndsAtMillis = 0;
+            return 0;
+        }
+        return left;
     }
 }

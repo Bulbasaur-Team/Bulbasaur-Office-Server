@@ -37,6 +37,7 @@ import ru.bulbasaur.office.infra.ws.dto.RetroJoinMessage;
 import ru.bulbasaur.office.infra.ws.dto.RetroMoodMessage;
 import ru.bulbasaur.office.infra.ws.dto.RetroMoveStickerMessage;
 import ru.bulbasaur.office.infra.ws.dto.RetroReactMessage;
+import ru.bulbasaur.office.infra.ws.dto.RetroTimerStartMessage;
 import ru.bulbasaur.office.infra.ws.dto.RoomMessage;
 import ru.bulbasaur.office.infra.ws.handler.AirHockeyWsHandler;
 import ru.bulbasaur.office.infra.ws.handler.CatWsHandler;
@@ -119,6 +120,8 @@ public class PresenceWebSocketHandler extends TextWebSocketHandler {
                 case "retroMoveSticker" -> retro.onMoveSticker(session, jsonMapper.treeToValue(node, RetroMoveStickerMessage.class));
                 case "retroReact" -> retro.onReact(session, jsonMapper.treeToValue(node, RetroReactMessage.class));
                 case "retroDeleteMeme" -> retro.onDeleteMeme(session, jsonMapper.treeToValue(node, RetroDeleteMemeMessage.class));
+                case "retroTimerStart" -> retro.onTimerStart(session, jsonMapper.treeToValue(node, RetroTimerStartMessage.class));
+                case "retroTimerStop" -> retro.onTimerStop(session);
                 case "projectorOn" -> projector.onOn(session, jsonMapper.treeToValue(node, ProjectorOnMessage.class));
                 case "projectorOff" -> projector.onOff(session);
                 case "projectorIndex" -> projector.onIndex(session, jsonMapper.treeToValue(node, ProjectorIndexMessage.class));

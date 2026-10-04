@@ -101,6 +101,6 @@ public class RetroController {
             readOnly = true;
         }
         long remaining = readOnly ? 0 : Math.max(0, room.getClosesAt().toEpochMilli() - System.currentTimeMillis());
-        return buildState.execute(room, player.id(), List.of(), remaining, true);
+        return buildState.execute(room, player.id(), List.of(), remaining, 0, true);
     }
 }

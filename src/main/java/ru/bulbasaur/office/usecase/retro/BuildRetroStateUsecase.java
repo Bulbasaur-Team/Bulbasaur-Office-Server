@@ -39,6 +39,7 @@ public class BuildRetroStateUsecase {
             UUID viewerId,
             List<RetroRoom.Participant> onlineParticipants,
             long remainingMs,
+            long timerRemainingMs,
             boolean readOnly
     ) {
         UUID roomId = room.getId();
@@ -140,6 +141,7 @@ public class BuildRetroStateUsecase {
                 room.getAdminPlayerId().equals(viewerId),
                 readOnly,
                 remainingMs,
+                timerRemainingMs,
                 participants,
                 moodViews,
                 boards,

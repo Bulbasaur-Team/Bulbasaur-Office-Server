@@ -14,6 +14,7 @@ public record RetroStateOut(
         boolean isAdmin,
         boolean readOnly,
         long remainingMs,
+        long timerRemainingMs,
         List<Participant> participants,
         List<Mood> moods,
         Map<String, List<Sticker>> stickers,
@@ -55,13 +56,14 @@ public record RetroStateOut(
             boolean isAdmin,
             boolean readOnly,
             long remainingMs,
+            long timerRemainingMs,
             List<Participant> participants,
             List<Mood> moods,
             Map<String, List<Sticker>> stickers,
             List<Meme> memes
     ) {
         return new RetroStateOut(
-                "retroState", id, name, isAdmin, readOnly, remainingMs,
+                "retroState", id, name, isAdmin, readOnly, remainingMs, timerRemainingMs,
                 participants, moods, stickers, memes);
     }
 }
