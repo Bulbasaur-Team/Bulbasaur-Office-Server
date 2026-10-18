@@ -10,6 +10,7 @@ public final class RetroConstants {
     public static final int MAX_ACTIVE_ROOMS = 20;
     public static final int MAX_STICKERS_PER_BOARD = 80;
     public static final int MAX_MEMES_PER_ROOM = 40;
+    /** Совпадает с RETRO_MEME_MAX_BYTES в клиенте (src/net/api.ts). */
     public static final int MAX_MEME_BYTES = 2 * 1024 * 1024;
     public static final int MAX_STICKER_TEXT = 500;
 

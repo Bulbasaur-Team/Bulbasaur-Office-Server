@@ -1,10 +1,13 @@
 package ru.bulbasaur.office.infra.rest;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 import ru.bulbasaur.office.usecase.exception.InvalidCredentialsException;
 import ru.bulbasaur.office.usecase.exception.LoginAlreadyTakenException;
 import ru.bulbasaur.office.usecase.exception.PlayerNotFoundException;
@@ -85,5 +88,25 @@ public class GlobalExceptionHandler {
                 .map(fieldError -> fieldError.getField() + ": " + fieldError.getDefaultMessage())
                 .collect(Collectors.joining("; "));
         return new ApiError(message.isBlank() ? "Некорректный запрос" : message);
+    }
+
+    // Причина из ResponseStatusException иначе не попадает в JSON
+    // (spring.web.error.include-message=never), и клиент показывает «Ошибка 400».
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiError> handleStatus(ResponseStatusException e) {
+        String reason = e.getReason();
+        if (reason == null || reason.isBlank()) {
+            reason = fallback(e.getStatusCode());
+        }
+        return ResponseEntity.status(e.getStatusCode()).body(new ApiError(reason));
+    }
+
+    private static String fallback(HttpStatusCode status) {
+        return switch (status.value()) {
+            case 400 -> "Некорректный запрос.";
+            case 404 -> "Не найдено.";
+            case 409 -> "Конфликт.";
+            default -> "Ошибка " + status.value();
+        };
     }
 }

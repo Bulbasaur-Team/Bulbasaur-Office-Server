@@ -60,7 +60,7 @@ public class RetroController {
         try {
             data = Base64.getDecoder().decode(body.dataBase64());
         } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Некорректный Base64");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Не удалось прочитать картинку.");
         }
         RetroResult<UUID> result = addMeme.execute(roomId, player.id(), body.mimeType(), data);
         if (!result.ok()) {
