@@ -3,6 +3,7 @@ package ru.bulbasaur.office.infra.persistence.connector;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import ru.bulbasaur.office.domain.model.PokerScale;
 import ru.bulbasaur.office.domain.model.PokerSession;
 import ru.bulbasaur.office.domain.model.PokerSessionStatus;
 import ru.bulbasaur.office.domain.model.PokerTask;
@@ -85,11 +86,12 @@ public class PokerResultConnector implements PokerRepositoryPort {
 
     @Override
     @Transactional
-    public PokerSession createSession(String name, UUID adminPlayerId, Instant closesAt) {
+    public PokerSession createSession(String name, PokerScale scale, UUID adminPlayerId, Instant closesAt) {
         Instant now = Instant.now();
         PokerRoomEntity entity = new PokerRoomEntity();
         entity.setId(UUID.randomUUID());
         entity.setName(name);
+        entity.setScale(scale.code());
         entity.setAdminPlayerId(adminPlayerId);
         entity.setStatus(PokerRoomEntity.STATUS_ACTIVE);
         entity.setCreatedAt(now);
@@ -156,6 +158,12 @@ public class PokerResultConnector implements PokerRepositoryPort {
                 .collect(Collectors.toMap(PlayerEntity::getId, PlayerEntity::getLogin));
     }
 
+    /** Старые комнаты без колоды и битые значения читаем как Фибоначчи. */
+    private static PokerScale scaleOf(String code) {
+        PokerScale scale = PokerScale.fromCode(code);
+        return scale != null ? scale : PokerScale.FIBONACCI;
+    }
+
     private void close(PokerRoomEntity room) {
         if (PokerRoomEntity.STATUS_CLOSED.equals(room.getStatus())) {
             return;
@@ -169,6 +177,7 @@ public class PokerResultConnector implements PokerRepositoryPort {
         return PokerSession.builder()
                 .id(entity.getId())
                 .name(entity.getName())
+                .scale(scaleOf(entity.getScale()))
                 .adminPlayerId(entity.getAdminPlayerId())
                 .status(PokerSessionStatus.valueOf(entity.getStatus()))
                 .createdAt(entity.getCreatedAt())

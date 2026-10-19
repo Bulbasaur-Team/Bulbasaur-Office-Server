@@ -8,6 +8,6 @@ import java.util.UUID;
 /** Готовая к сохранению запись голосования: задача с итогом и голосами. */
 @Builder
 public record PokerVotingUpsert(UUID roomId, String roomName, String taskTitle,
-                                Double average, Integer recommended,
+                                Double average, String recommended,
                                 List<PokerVoteRecord> votes) {
 }

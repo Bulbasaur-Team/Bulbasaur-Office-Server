@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 38-poker-scale
+      author: bulba
+      changes:
+        - addColumn:
+            tableName: poker_rooms
+            columns:
+              - column:
+                  name: scale
+                  type: varchar(16)
+                  defaultValue: fibonacci
+                  constraints:
+                    nullable: false
+        # Старые итоги — целые числа Фибоначчи. Новые рекомендации бывают и «M».
+        - sql:
+            sql: ALTER TABLE poker_tasks ALTER COLUMN recommended TYPE varchar(8) USING recommended::varchar

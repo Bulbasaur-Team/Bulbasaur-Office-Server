@@ -15,6 +15,7 @@ public class PokerSession {
 
     private final UUID id;
     private final String name;
+    private final PokerScale scale;
     private final UUID adminPlayerId;
     private final PokerSessionStatus status;
     private final Instant createdAt;

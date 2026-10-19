@@ -1,4 +1,5 @@
 package ru.bulbasaur.office.infra.ws.dto;
 
-public record PokerCreateMessage(String name) {
+/** Создание комнаты: имя и код колоды (sequential, fibonacci, powers, tshirts). */
+public record PokerCreateMessage(String name, String scale) {
 }

@@ -37,6 +37,7 @@ public class PokerRegistry {
         PokerRoom room = new PokerRoom(
                 session.getId().toString(),
                 session.getName(),
+                session.getScale(),
                 session.getAdminPlayerId(),
                 adminLogin,
                 session.getClosesAt().toEpochMilli());

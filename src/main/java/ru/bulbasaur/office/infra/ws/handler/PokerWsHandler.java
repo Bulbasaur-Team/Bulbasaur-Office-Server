@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
 import ru.bulbasaur.office.domain.model.Achievement;
+import ru.bulbasaur.office.domain.model.PokerScale;
 import ru.bulbasaur.office.domain.model.PokerSession;
 import ru.bulbasaur.office.infra.ws.PokerRegistry;
 import ru.bulbasaur.office.infra.ws.PokerRoom;
@@ -64,8 +65,13 @@ public class PokerWsHandler {
         if (name.length() > 60) {
             name = name.substring(0, 60);
         }
+        PokerScale scale = PokerScale.fromCode(msg.scale());
+        if (scale == null) {
+            messenger.send(session, PokerErrorOut.of("Выберите последовательность."));
+            return;
+        }
         pokerRegistry.reconcile();
-        PokerSession created = createRoom.execute(name, state.playerId());
+        PokerSession created = createRoom.execute(name, scale, state.playerId());
         if (created == null) {
             messenger.send(session, PokerErrorOut.of("Слишком много активных комнат, попробуйте позже."));
             return;
@@ -155,6 +161,7 @@ public class PokerWsHandler {
                             .roomId(room.idUuid())
                             .roomName(room.name())
                             .taskTitle(finished.title())
+                            .scale(room.scale())
                             .votes(finished.votes())
                             .build());
             room.setResult(result.average(), result.recommended());

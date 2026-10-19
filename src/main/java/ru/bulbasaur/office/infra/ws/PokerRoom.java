@@ -2,6 +2,7 @@ package ru.bulbasaur.office.infra.ws;
 
 import org.springframework.web.socket.WebSocketSession;
 import ru.bulbasaur.office.domain.model.PlayerAppearance;
+import ru.bulbasaur.office.domain.model.PokerScale;
 import ru.bulbasaur.office.usecase.dto.PokerVoteRecord;
 import ru.bulbasaur.office.infra.ws.dto.PokerStateOut;
 
@@ -9,7 +10,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -22,7 +22,6 @@ public class PokerRoom {
 
     public static final long TTL_MS = 2 * 60 * 60 * 1000L;
 
-    private static final Set<String> CARD_VALUES = Set.of("0", "1", "2", "3", "5", "8", "13", "?", "coffee");
     private static final int MAX_PARTICIPANTS = 30;
 
     /** Участник: сессия обновляется при повторном входе (реконнект). */
@@ -35,6 +34,7 @@ public class PokerRoom {
 
     private final String id;
     private final String name;
+    private final PokerScale scale;
     private final UUID adminPlayerId;
     private final String adminLogin;
     private final long closesAtMillis;
@@ -47,11 +47,12 @@ public class PokerRoom {
     private boolean revealed;
     private List<PokerStateOut.Vote> revealedVotes = List.of();
     private Double average;
-    private Integer recommended;
+    private String recommended;
 
-    public PokerRoom(String id, String name, UUID adminPlayerId, String adminLogin, long closesAtMillis) {
+    public PokerRoom(String id, String name, PokerScale scale, UUID adminPlayerId, String adminLogin, long closesAtMillis) {
         this.id = id;
         this.name = name;
+        this.scale = scale;
         this.adminPlayerId = adminPlayerId;
         this.adminLogin = adminLogin;
         this.closesAtMillis = closesAtMillis;
@@ -67,6 +68,10 @@ public class PokerRoom {
 
     public String name() {
         return name;
+    }
+
+    public PokerScale scale() {
+        return scale;
     }
 
     public String adminLogin() {
@@ -111,7 +116,7 @@ public class PokerRoom {
 
     public synchronized boolean vote(UUID playerId, String value) {
         if (currentTitle == null || revealed || !participants.containsKey(playerId)
-                || !CARD_VALUES.contains(value)) {
+                || !scale.accepts(value)) {
             return false;
         }
         votes.put(playerId, value);
@@ -183,7 +188,7 @@ public class PokerRoom {
     }
 
     /** Итог от usecase после сохранения — показывается всем в комнате. */
-    public synchronized void setResult(Double average, Integer recommended) {
+    public synchronized void setResult(Double average, String recommended) {
         this.average = average;
         this.recommended = recommended;
     }
@@ -214,6 +219,8 @@ public class PokerRoom {
                 .type("pokerState")
                 .id(id)
                 .name(name)
+                .scale(scale.code())
+                .cards(scale.cards())
                 .isAdmin(adminPlayerId.equals(playerId))
                 .readOnly(false)
                 .remainingMs(Math.max(0, closesAtMillis - nowMillis))

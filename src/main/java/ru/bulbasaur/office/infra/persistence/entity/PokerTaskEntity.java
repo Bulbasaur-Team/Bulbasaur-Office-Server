@@ -28,7 +28,7 @@ public class PokerTaskEntity {
 
     private Double average;
 
-    private Integer recommended;
+    private String recommended;
 
     private Instant createdAt;
 }

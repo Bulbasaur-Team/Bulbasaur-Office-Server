@@ -11,7 +11,8 @@ import java.util.List;
  * и так клиент никогда не рассинхронизируется.
  */
 @Builder
-public record PokerStateOut(String type, String id, String name, boolean isAdmin, boolean readOnly,
+public record PokerStateOut(String type, String id, String name, String scale, List<String> cards,
+                            boolean isAdmin, boolean readOnly,
                             long remainingMs, String myVote,
                             List<Participant> participants, Current current,
                             List<DoneTask> tasks) {
@@ -23,7 +24,7 @@ public record PokerStateOut(String type, String id, String name, boolean isAdmin
 
     /** Текущая задача; votes заполняются только после вскрытия. */
     @Builder
-    public record Current(String title, boolean revealed, Double average, Integer recommended,
+    public record Current(String title, boolean revealed, Double average, String recommended,
                           List<Vote> votes) {
     }
 
@@ -34,6 +35,6 @@ public record PokerStateOut(String type, String id, String name, boolean isAdmin
 
     /** Завершённая задача из списка вверху экрана; votes — для истории. */
     @Builder
-    public record DoneTask(String title, Double average, Integer recommended, List<Vote> votes) {
+    public record DoneTask(String title, Double average, String recommended, List<Vote> votes) {
     }
 }

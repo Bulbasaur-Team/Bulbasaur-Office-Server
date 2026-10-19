@@ -1,8 +1,9 @@
 package ru.bulbasaur.office.usecase.dto;
 
 /**
- * Итог голосования: средняя по числовым голосам и ближайшее число Фибоначчи как
- * рекомендация. null — числовых голосов не было (все "?" и "coffee").
+ * Итог голосования: средняя по учитываемым голосам и ближайшая карта выбранной
+ * колоды. У футболок average = null, recommended — размер («M»). Оба null —
+ * учитываемых голосов не было (все «?» и «coffee»).
  */
-public record PokerVotingResult(Double average, Integer recommended) {
+public record PokerVotingResult(Double average, String recommended) {
 }

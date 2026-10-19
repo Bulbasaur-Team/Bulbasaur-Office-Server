@@ -1,5 +1,6 @@
 package ru.bulbasaur.office.usecase.port.out;
 
+import ru.bulbasaur.office.domain.model.PokerScale;
 import ru.bulbasaur.office.domain.model.PokerSession;
 import ru.bulbasaur.office.domain.model.PokerTask;
 import ru.bulbasaur.office.usecase.dto.PokerVotingUpsert;
@@ -22,7 +23,7 @@ public interface PokerRepositoryPort {
 
     long countActiveSessions();
 
-    PokerSession createSession(String name, UUID adminPlayerId, Instant closesAt);
+    PokerSession createSession(String name, PokerScale scale, UUID adminPlayerId, Instant closesAt);
 
     void closeSession(UUID roomId);
 

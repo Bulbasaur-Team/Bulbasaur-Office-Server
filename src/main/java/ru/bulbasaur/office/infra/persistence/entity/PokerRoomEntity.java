@@ -25,6 +25,9 @@ public class PokerRoomEntity {
 
     private String name;
 
+    /** Код колоды: sequential, fibonacci, powers, tshirts. */
+    private String scale;
+
     private UUID adminPlayerId;
 
     private String status;

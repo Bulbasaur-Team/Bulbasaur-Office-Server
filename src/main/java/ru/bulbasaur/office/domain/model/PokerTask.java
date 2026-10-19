@@ -16,6 +16,6 @@ public class PokerTask {
     private final UUID id;
     private final String title;
     private final Double average;
-    private final Integer recommended;
+    private final String recommended;
     private final List<PokerVote> votes;
 }

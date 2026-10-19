@@ -38,6 +38,8 @@ public class BuildPokerHistoryStateUsecase {
                 .type("pokerState")
                 .id(session.getId().toString())
                 .name(session.getName())
+                .scale(session.getScale().code())
+                .cards(session.getScale().cards())
                 .isAdmin(session.getAdminPlayerId().equals(viewerId))
                 .readOnly(true)
                 .remainingMs(0)
