@@ -116,3 +116,9 @@ databaseChangeLog:
   - include:
       file: changes/038-poker-scale.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/039-clear-bulbaguess-wotd.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/040-clear-bulbaguess-wotd.yaml
+      relativeToChangelogFile: true

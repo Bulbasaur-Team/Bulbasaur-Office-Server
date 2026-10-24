@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: 40-clear-bulbaguess-wotd-progress
+      author: bulba
+      comment: >
+        Пул загадок Bulba Guess снова сужен: слово дня на сохранённую дату
+        больше не совпадает с прогрессом. Стираем прогресс слова дня этой игры.
+      changes:
+        - delete:
+            tableName: wotd_progress
+            where: game = 'BULBA_GUESS'

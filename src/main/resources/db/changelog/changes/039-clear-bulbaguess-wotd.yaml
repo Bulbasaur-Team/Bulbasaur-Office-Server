@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: 39-clear-bulbaguess-wotd-progress
+      author: bulba
+      comment: >
+        Словарь Bulba Guess сменён: слово дня и счёт догадок больше не совпадают
+        с сохранённым прогрессом. Стираем прогресс слова дня этой игры, чтобы
+        старые попытки не восстановились на новом слове.
+      changes:
+        - delete:
+            tableName: wotd_progress
+            where: game = 'BULBA_GUESS'

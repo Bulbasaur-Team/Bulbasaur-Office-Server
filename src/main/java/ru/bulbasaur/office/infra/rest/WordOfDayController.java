@@ -21,6 +21,7 @@ public class WordOfDayController {
         WotdSeedsView view = getWotdSeeds.execute();
         return new WotdSeedsResponse(
                 new GameSeedsResponse(view.guess().today(), view.guess().prev()),
-                new GameSeedsResponse(view.wordle().today(), view.wordle().prev()));
+                new GameSeedsResponse(view.wordle().today(), view.wordle().prev()),
+                view.today().toString());
     }
 }

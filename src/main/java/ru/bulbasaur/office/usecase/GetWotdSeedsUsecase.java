@@ -26,7 +26,8 @@ public class GetWotdSeedsUsecase {
         LocalDate yesterday = today.minusDays(1);
         return new WotdSeedsView(
                 gameSeeds(GUESS, today, yesterday),
-                gameSeeds(WORDLE, today, yesterday)
+                gameSeeds(WORDLE, today, yesterday),
+                today
         );
     }
 
