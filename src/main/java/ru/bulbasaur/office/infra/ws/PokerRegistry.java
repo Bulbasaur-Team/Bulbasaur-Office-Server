@@ -40,7 +40,8 @@ public class PokerRegistry {
                 session.getScale(),
                 session.getAdminPlayerId(),
                 adminLogin,
-                session.getClosesAt().toEpochMilli());
+                session.getClosesAt().toEpochMilli(),
+                session.isLocked());
         rooms.put(room.id(), room);
         return room;
     }

@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.bulbasaur.office.infra.persistence.entity.RetroRoomEntity;
 import ru.bulbasaur.office.infra.persistence.repository.RetroRoomJpaRepository;
 import ru.bulbasaur.office.infra.ws.RetroRoom;
+import ru.bulbasaur.office.usecase.room.RoomAccessUsecase;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -15,9 +16,10 @@ import java.util.UUID;
 public class CreateRetroRoomUsecase {
 
     private final RetroRoomJpaRepository rooms;
+    private final RoomAccessUsecase roomAccess;
 
     @Transactional
-    public RetroRoomEntity execute(String name, UUID adminPlayerId) {
+    public RetroRoomEntity execute(String name, UUID adminPlayerId, String passwordHash) {
         if (rooms.countByStatus(RetroRoomEntity.STATUS_ACTIVE) >= RetroConstants.MAX_ACTIVE_ROOMS) {
             return null;
         }
@@ -26,9 +28,14 @@ public class CreateRetroRoomUsecase {
         entity.setId(UUID.randomUUID());
         entity.setName(name);
         entity.setAdminPlayerId(adminPlayerId);
+        entity.setPasswordHash(passwordHash);
         entity.setStatus(RetroRoomEntity.STATUS_ACTIVE);
         entity.setCreatedAt(now);
         entity.setClosesAt(now.plusMillis(RetroRoom.TTL_MS));
-        return rooms.save(entity);
+        RetroRoomEntity saved = rooms.saveAndFlush(entity);
+        if (passwordHash != null) {
+            roomAccess.grantRetro(saved.getId(), adminPlayerId);
+        }
+        return saved;
     }
 }

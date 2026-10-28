@@ -24,17 +24,21 @@ public class RetroRoom {
     private final UUID adminPlayerId;
     private final String adminLogin;
     private final long closesAtMillis;
+    private final boolean locked;
     /** 0 — таймер ведущего не запущен. */
     private long timerEndsAtMillis;
 
     private final Map<UUID, Participant> participants = new LinkedHashMap<>();
 
-    public RetroRoom(String id, String name, UUID adminPlayerId, String adminLogin, long closesAtMillis) {
+    public RetroRoom(
+            String id, String name, UUID adminPlayerId, String adminLogin, long closesAtMillis, boolean locked
+    ) {
         this.id = id;
         this.name = name;
         this.adminPlayerId = adminPlayerId;
         this.adminLogin = adminLogin;
         this.closesAtMillis = closesAtMillis;
+        this.locked = locked;
     }
 
     public String id() {
@@ -55,6 +59,10 @@ public class RetroRoom {
 
     public String adminLogin() {
         return adminLogin;
+    }
+
+    public boolean locked() {
+        return locked;
     }
 
     public long closesAtMillis() {

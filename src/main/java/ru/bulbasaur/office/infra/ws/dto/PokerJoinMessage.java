@@ -1,4 +1,4 @@
 package ru.bulbasaur.office.infra.ws.dto;
 
-public record PokerJoinMessage(String roomId) {
+public record PokerJoinMessage(String roomId, String password) {
 }

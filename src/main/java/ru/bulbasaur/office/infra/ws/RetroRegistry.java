@@ -37,7 +37,8 @@ public class RetroRegistry {
                 entity.getName(),
                 entity.getAdminPlayerId(),
                 adminLogin,
-                entity.getClosesAt().toEpochMilli());
+                entity.getClosesAt().toEpochMilli(),
+                entity.isLocked());
         rooms.put(room.id(), room);
         return room;
     }
@@ -60,7 +61,8 @@ public class RetroRegistry {
                             e.getName(),
                             e.getAdminPlayerId(),
                             adminLogin,
-                            e.getClosesAt().toEpochMilli());
+                            e.getClosesAt().toEpochMilli(),
+                            e.isLocked());
                     rooms.put(room.id(), room);
                     return room;
                 })

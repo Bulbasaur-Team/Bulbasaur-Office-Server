@@ -26,6 +26,9 @@ import ru.bulbasaur.office.usecase.dto.RecordPokerVotingCommand;
 import ru.bulbasaur.office.usecase.poker.ClosePokerRoomUsecase;
 import ru.bulbasaur.office.usecase.poker.CreatePokerRoomUsecase;
 import ru.bulbasaur.office.usecase.poker.GetPokerRoomsUsecase;
+import ru.bulbasaur.office.usecase.exception.RoomLockedException;
+import ru.bulbasaur.office.usecase.exception.RoomNotFoundException;
+import ru.bulbasaur.office.usecase.room.RoomAccessUsecase;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,10 +50,11 @@ public class PokerWsHandler {
     private final CreatePokerRoomUsecase createRoom;
     private final ClosePokerRoomUsecase closeRoom;
     private final GetPokerRoomsUsecase getRooms;
+    private final RoomAccessUsecase roomAccess;
     private final WsMessenger messenger;
 
     public void onList(WebSocketSession session) {
-        messenger.send(session, roomsOut());
+        messenger.send(session, roomsOut(viewerId(session)));
     }
 
     public void onCreate(WebSocketSession session, PokerCreateMessage msg) {
@@ -70,8 +74,15 @@ public class PokerWsHandler {
             messenger.send(session, PokerErrorOut.of("Выберите последовательность."));
             return;
         }
+        String passwordHash;
+        try {
+            passwordHash = roomAccess.hashOptional(msg.password());
+        } catch (IllegalArgumentException e) {
+            messenger.send(session, PokerErrorOut.of(e.getMessage()));
+            return;
+        }
         pokerRegistry.reconcile();
-        PokerSession created = createRoom.execute(name, scale, state.playerId());
+        PokerSession created = createRoom.execute(name, scale, state.playerId(), passwordHash);
         if (created == null) {
             messenger.send(session, PokerErrorOut.of("Слишком много активных комнат, попробуйте позже."));
             return;
@@ -89,7 +100,10 @@ public class PokerWsHandler {
         PokerRoom room = pokerRegistry.get(msg.roomId());
         if (room == null) {
             messenger.send(session, PokerErrorOut.of("Комната уже закрыта."));
-            messenger.send(session, roomsOut());
+            messenger.send(session, roomsOut(state.playerId()));
+            return;
+        }
+        if (!admit(session, room.idUuid(), state.playerId(), msg.password())) {
             return;
         }
         if (!room.join(state.playerId(), state.login(), state.appearance(), session)) {
@@ -207,14 +221,17 @@ public class PokerWsHandler {
         return room;
     }
 
-    private PokerRoomsOut roomsOut() {
+    private PokerRoomsOut roomsOut(UUID viewerId) {
         pokerRegistry.reconcile();
+        Set<UUID> allowed = roomAccess.pokerMemberRoomIds(viewerId);
         List<PokerRoomsOut.Room> active = pokerRegistry.active().stream()
                 .map(r -> PokerRoomsOut.Room.builder()
                         .id(r.id())
                         .name(r.name())
                         .adminLogin(r.adminLogin())
                         .participants(r.participantCount())
+                        .locked(r.locked())
+                        .needsPassword(RoomAccessUsecase.needsPassword(r.locked(), r.idUuid(), allowed))
                         .build())
                 .toList();
 
@@ -228,6 +245,8 @@ public class PokerWsHandler {
                     .name(e.getName())
                     .adminLogin(logins.getOrDefault(e.getAdminPlayerId(), "?"))
                     .closedAt(e.closedAtOrClosesAt().toEpochMilli())
+                    .locked(e.isLocked())
+                    .needsPassword(RoomAccessUsecase.needsPassword(e.isLocked(), e.getId(), allowed))
                     .build());
         }
         return PokerRoomsOut.builder()
@@ -235,6 +254,21 @@ public class PokerWsHandler {
                 .active(active)
                 .history(history)
                 .build();
+    }
+
+    private boolean admit(WebSocketSession session, UUID roomId, UUID playerId, String password) {
+        try {
+            roomAccess.admitPoker(roomId, playerId, password);
+            return true;
+        } catch (RoomLockedException | RoomNotFoundException e) {
+            messenger.send(session, PokerErrorOut.of(e.getMessage()));
+            return false;
+        }
+    }
+
+    private UUID viewerId(WebSocketSession session) {
+        PresenceState state = registry.get(session.getId());
+        return state == null ? null : state.playerId();
     }
 
     private void broadcastPokerState(PokerRoom room) {

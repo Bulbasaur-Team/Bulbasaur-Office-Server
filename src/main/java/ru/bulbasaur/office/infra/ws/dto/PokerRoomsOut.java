@@ -9,10 +9,14 @@ import java.util.List;
 public record PokerRoomsOut(String type, List<Room> active, List<HistoryRoom> history) {
 
     @Builder
-    public record Room(String id, String name, String adminLogin, int participants) {
+    public record Room(
+            String id, String name, String adminLogin, int participants, boolean locked, boolean needsPassword
+    ) {
     }
 
     @Builder
-    public record HistoryRoom(String id, String name, String adminLogin, long closedAt) {
+    public record HistoryRoom(
+            String id, String name, String adminLogin, long closedAt, boolean locked, boolean needsPassword
+    ) {
     }
 }

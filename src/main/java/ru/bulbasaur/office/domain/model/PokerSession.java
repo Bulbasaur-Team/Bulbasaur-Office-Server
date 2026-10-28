@@ -21,6 +21,7 @@ public class PokerSession {
     private final Instant createdAt;
     private final Instant closesAt;
     private final Instant closedAt;
+    private final boolean locked;
 
     public boolean isActive() {
         return status == PokerSessionStatus.ACTIVE;

@@ -10,12 +10,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import ru.bulbasaur.office.infra.persistence.entity.RetroMemeEntity;
 import ru.bulbasaur.office.infra.persistence.entity.RetroRoomEntity;
 import ru.bulbasaur.office.infra.rest.dto.RetroMemeUploadRequest;
 import ru.bulbasaur.office.infra.rest.dto.RetroMemeUploadResponse;
+import ru.bulbasaur.office.infra.rest.dto.RoomPasswordRequest;
 import ru.bulbasaur.office.infra.security.AuthPrincipal;
 import ru.bulbasaur.office.infra.ws.dto.RetroStateOut;
 import ru.bulbasaur.office.infra.ws.handler.RetroWsHandler;
@@ -25,6 +27,7 @@ import ru.bulbasaur.office.usecase.retro.CloseRetroRoomUsecase;
 import ru.bulbasaur.office.usecase.retro.GetRetroMemeUsecase;
 import ru.bulbasaur.office.usecase.retro.GetRetroRoomsUsecase;
 import ru.bulbasaur.office.usecase.retro.RetroResult;
+import ru.bulbasaur.office.usecase.room.RoomAccessUsecase;
 
 import java.util.Base64;
 import java.util.List;
@@ -41,6 +44,7 @@ public class RetroController {
     private final GetRetroMemeUsecase getMeme;
     private final BuildRetroStateUsecase buildState;
     private final RetroWsHandler retroWs;
+    private final RoomAccessUsecase roomAccess;
 
     @PostMapping("/rooms/{roomId}/memes")
     public RetroMemeUploadResponse uploadMeme(
@@ -53,6 +57,7 @@ public class RetroController {
         if (!RetroRoomEntity.STATUS_ACTIVE.equals(room.getStatus())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Ретро уже завершено");
         }
+        roomAccess.admitRetro(roomId, player.id(), null);
         if (!retroWs.isParticipant(roomId, player.id())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Нужно сначала войти в комнату");
         }
@@ -77,6 +82,7 @@ public class RetroController {
     ) {
         RetroMemeEntity meme = getMeme.execute(memeId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        roomAccess.admitRetro(meme.getRoomId(), player.id(), null);
         MediaType mediaType;
         try {
             mediaType = MediaType.parseMediaType(meme.getMimeType());
@@ -86,11 +92,22 @@ public class RetroController {
         return ResponseEntity.ok().contentType(mediaType).body(meme.getImageData());
     }
 
+    @PostMapping("/rooms/{roomId}/access")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void grantAccess(
+            @PathVariable UUID roomId,
+            @RequestBody RoomPasswordRequest body,
+            @AuthenticationPrincipal AuthPrincipal player
+    ) {
+        roomAccess.admitRetro(roomId, player.id(), body.password());
+    }
+
     @GetMapping("/rooms/{roomId}")
     public RetroStateOut getRoom(
             @PathVariable UUID roomId,
             @AuthenticationPrincipal AuthPrincipal player
     ) {
+        roomAccess.admitRetro(roomId, player.id(), null);
         RetroRoomEntity room = getRooms.findRoom(roomId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Комната не найдена"));
         boolean readOnly = RetroRoomEntity.STATUS_CLOSED.equals(room.getStatus())

@@ -86,17 +86,20 @@ public class PokerResultConnector implements PokerRepositoryPort {
 
     @Override
     @Transactional
-    public PokerSession createSession(String name, PokerScale scale, UUID adminPlayerId, Instant closesAt) {
+    public PokerSession createSession(
+            String name, PokerScale scale, UUID adminPlayerId, Instant closesAt, String passwordHash
+    ) {
         Instant now = Instant.now();
         PokerRoomEntity entity = new PokerRoomEntity();
         entity.setId(UUID.randomUUID());
         entity.setName(name);
         entity.setScale(scale.code());
         entity.setAdminPlayerId(adminPlayerId);
+        entity.setPasswordHash(passwordHash);
         entity.setStatus(PokerRoomEntity.STATUS_ACTIVE);
         entity.setCreatedAt(now);
         entity.setClosesAt(closesAt);
-        return toSession(rooms.save(entity));
+        return toSession(rooms.saveAndFlush(entity));
     }
 
     @Override
@@ -183,6 +186,7 @@ public class PokerResultConnector implements PokerRepositoryPort {
                 .createdAt(entity.getCreatedAt())
                 .closesAt(entity.getClosesAt())
                 .closedAt(entity.getClosedAt())
+                .locked(entity.isLocked())
                 .build();
     }
 }

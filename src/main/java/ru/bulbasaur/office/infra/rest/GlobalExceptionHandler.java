@@ -13,6 +13,8 @@ import ru.bulbasaur.office.usecase.exception.LoginAlreadyTakenException;
 import ru.bulbasaur.office.usecase.exception.PlayerNotFoundException;
 import ru.bulbasaur.office.usecase.exception.PokerRoomActiveException;
 import ru.bulbasaur.office.usecase.exception.PokerRoomNotFoundException;
+import ru.bulbasaur.office.usecase.exception.RoomLockedException;
+import ru.bulbasaur.office.usecase.exception.RoomNotFoundException;
 import ru.bulbasaur.office.usecase.exception.UnknownGameException;
 import ru.bulbasaur.office.usecase.exception.UnknownQuestException;
 import ru.bulbasaur.office.usecase.exception.WrongPasswordException;
@@ -58,6 +60,19 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(PokerRoomNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ApiError handlePokerRoomNotFound(PokerRoomNotFoundException e) {
+        return new ApiError(e.getMessage());
+    }
+
+    @ExceptionHandler(RoomNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ApiError handleRoomNotFound(RoomNotFoundException e) {
+        return new ApiError(e.getMessage());
+    }
+
+    // 400, а не 403: клиент разлогинивается по 401/403, сессия здесь валидна.
+    @ExceptionHandler(RoomLockedException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiError handleRoomLocked(RoomLockedException e) {
         return new ApiError(e.getMessage());
     }
 

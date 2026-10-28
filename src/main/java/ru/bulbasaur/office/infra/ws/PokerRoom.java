@@ -38,6 +38,7 @@ public class PokerRoom {
     private final UUID adminPlayerId;
     private final String adminLogin;
     private final long closesAtMillis;
+    private final boolean locked;
 
     private final Map<UUID, Participant> participants = new LinkedHashMap<>();
     private final List<PokerStateOut.DoneTask> done = new ArrayList<>();
@@ -49,13 +50,17 @@ public class PokerRoom {
     private Double average;
     private String recommended;
 
-    public PokerRoom(String id, String name, PokerScale scale, UUID adminPlayerId, String adminLogin, long closesAtMillis) {
+    public PokerRoom(
+            String id, String name, PokerScale scale, UUID adminPlayerId, String adminLogin,
+            long closesAtMillis, boolean locked
+    ) {
         this.id = id;
         this.name = name;
         this.scale = scale;
         this.adminPlayerId = adminPlayerId;
         this.adminLogin = adminLogin;
         this.closesAtMillis = closesAtMillis;
+        this.locked = locked;
     }
 
     public String id() {
@@ -76,6 +81,10 @@ public class PokerRoom {
 
     public String adminLogin() {
         return adminLogin;
+    }
+
+    public boolean locked() {
+        return locked;
     }
 
     public boolean isExpired(long nowMillis) {

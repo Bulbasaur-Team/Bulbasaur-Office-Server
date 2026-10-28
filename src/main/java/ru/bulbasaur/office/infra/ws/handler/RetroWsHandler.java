@@ -38,6 +38,9 @@ import ru.bulbasaur.office.usecase.retro.MoveRetroStickerUsecase;
 import ru.bulbasaur.office.usecase.retro.RetroResult;
 import ru.bulbasaur.office.usecase.retro.ToggleRetroReactionUsecase;
 import ru.bulbasaur.office.usecase.retro.UpsertRetroMoodUsecase;
+import ru.bulbasaur.office.usecase.exception.RoomLockedException;
+import ru.bulbasaur.office.usecase.exception.RoomNotFoundException;
+import ru.bulbasaur.office.usecase.room.RoomAccessUsecase;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -67,9 +70,10 @@ public class RetroWsHandler {
     private final ToggleRetroReactionUsecase toggleReaction;
     private final DeleteRetroMemeUsecase deleteMeme;
     private final BuildRetroStateUsecase buildState;
+    private final RoomAccessUsecase roomAccess;
 
     public void onList(WebSocketSession session) {
-        messenger.send(session, roomsOut());
+        messenger.send(session, roomsOut(viewerId(session)));
     }
 
     public void onCreate(WebSocketSession session, RetroCreateMessage msg) {
@@ -84,7 +88,14 @@ public class RetroWsHandler {
         if (name.length() > 60) {
             name = name.substring(0, 60);
         }
-        RetroRoomEntity entity = createRoom.execute(name, state.playerId());
+        String passwordHash;
+        try {
+            passwordHash = roomAccess.hashOptional(msg.password());
+        } catch (IllegalArgumentException e) {
+            messenger.send(session, RetroErrorOut.of(e.getMessage()));
+            return;
+        }
+        RetroRoomEntity entity = createRoom.execute(name, state.playerId(), passwordHash);
         if (entity == null) {
             messenger.send(session, RetroErrorOut.of("Слишком много активных комнат, попробуйте позже."));
             return;
@@ -102,7 +113,10 @@ public class RetroWsHandler {
         RetroRoom room = retroRegistry.get(msg.roomId());
         if (room == null) {
             messenger.send(session, RetroErrorOut.of("Комната уже закрыта."));
-            messenger.send(session, roomsOut());
+            messenger.send(session, roomsOut(state.playerId()));
+            return;
+        }
+        if (!admit(session, room.idUuid(), state.playerId(), msg.password())) {
             return;
         }
         if (!room.join(state.playerId(), state.login(), "", session)) {
@@ -333,9 +347,12 @@ public class RetroWsHandler {
         return room;
     }
 
-    private RetroRoomsOut roomsOut() {
+    private RetroRoomsOut roomsOut(UUID viewerId) {
+        Set<UUID> allowed = roomAccess.retroMemberRoomIds(viewerId);
         List<RetroRoomsOut.ActiveRoom> active = retroRegistry.active().stream()
-                .map(r -> new RetroRoomsOut.ActiveRoom(r.id(), r.name(), r.adminLogin(), r.participantCount()))
+                .map(r -> new RetroRoomsOut.ActiveRoom(
+                        r.id(), r.name(), r.adminLogin(), r.participantCount(), r.locked(),
+                        RoomAccessUsecase.needsPassword(r.locked(), r.idUuid(), allowed)))
                 .toList();
 
         Set<String> known = active.stream().map(RetroRoomsOut.ActiveRoom::id).collect(Collectors.toSet());
@@ -351,7 +368,9 @@ public class RetroWsHandler {
                         e.getId().toString(),
                         e.getName(),
                         logins.getOrDefault(e.getAdminPlayerId(), "?"),
-                        0));
+                        0,
+                        e.isLocked(),
+                        RoomAccessUsecase.needsPassword(e.isLocked(), e.getId(), allowed)));
             }
         }
 
@@ -365,9 +384,26 @@ public class RetroWsHandler {
                     e.getId().toString(),
                     e.getName(),
                     logins.getOrDefault(e.getAdminPlayerId(), "?"),
-                    closedAt));
+                    closedAt,
+                    e.isLocked(),
+                    RoomAccessUsecase.needsPassword(e.isLocked(), e.getId(), allowed)));
         }
         return RetroRoomsOut.of(fromDb, history);
+    }
+
+    private boolean admit(WebSocketSession session, UUID roomId, UUID playerId, String password) {
+        try {
+            roomAccess.admitRetro(roomId, playerId, password);
+            return true;
+        } catch (RoomLockedException | RoomNotFoundException e) {
+            messenger.send(session, RetroErrorOut.of(e.getMessage()));
+            return false;
+        }
+    }
+
+    private UUID viewerId(WebSocketSession session) {
+        PresenceState state = registry.get(session.getId());
+        return state == null ? null : state.playerId();
     }
 
     private void broadcastState(RetroRoom room) {

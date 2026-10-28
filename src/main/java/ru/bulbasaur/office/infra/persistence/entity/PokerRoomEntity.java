@@ -30,7 +30,14 @@ public class PokerRoomEntity {
 
     private UUID adminPlayerId;
 
+    /** Bcrypt-хэш. null — комната без пароля. */
+    private String passwordHash;
+
     private String status;
+
+    public boolean isLocked() {
+        return passwordHash != null && !passwordHash.isBlank();
+    }
 
     private Instant createdAt;
 

@@ -23,7 +23,7 @@ public interface PokerRepositoryPort {
 
     long countActiveSessions();
 
-    PokerSession createSession(String name, PokerScale scale, UUID adminPlayerId, Instant closesAt);
+    PokerSession createSession(String name, PokerScale scale, UUID adminPlayerId, Instant closesAt, String passwordHash);
 
     void closeSession(UUID roomId);
 
