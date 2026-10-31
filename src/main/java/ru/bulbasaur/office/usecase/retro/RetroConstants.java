@@ -19,7 +19,9 @@ public final class RetroConstants {
             RetroStickerEntity.BOARD_IMPROVE,
             RetroStickerEntity.BOARD_ACTIONS);
 
-    public static final Set<String> STICKER_EMOJIS = Set.of("👍", "❤️", "😂", "😢", "🔥", "🎉");
+    /** Совпадает со STICKER_EMOJIS в клиенте (src/ui/Retro.ts). */
+    public static final Set<String> STICKER_EMOJIS = Set.of(
+            "👍", "❤️", "😂", "😢", "🔥", "🎉", "👏", "💯", "🌭", "🚀");
     public static final String MEME_EMOJI = "😂";
     public static final Set<String> MEME_MIME = Set.of("image/png", "image/jpeg", "image/webp", "image/gif");
 
