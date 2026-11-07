@@ -1,0 +1,113 @@
+databaseChangeLog:
+  - changeSet:
+      id: 42-jump-seasons
+      author: bulba
+      changes:
+        - createTable:
+            tableName: jump_season
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: season_number
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: starts_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: ends_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: awarded_at
+                  type: timestamp with time zone
+        - addUniqueConstraint:
+            tableName: jump_season
+            columnNames: season_number
+            constraintName: uq_jump_season_number
+        # Один незакрытый сезон. Следующий insert возможен только после awarded_at.
+        - sql:
+            sql: >
+              create unique index uq_jump_season_one_open
+              on jump_season ((1))
+              where awarded_at is null
+
+        - createTable:
+            tableName: jump_season_score
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: season_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_jump_season_score_season
+                    references: jump_season(id)
+                    deleteCascade: true
+              - column:
+                  name: player_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_jump_season_score_player
+                    references: players(id)
+                    deleteCascade: true
+              - column:
+                  name: value
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: jump_season_score
+            columnNames: season_id, player_id
+            constraintName: uq_jump_season_score_player
+        - createIndex:
+            tableName: jump_season_score
+            indexName: idx_jump_season_score_rank
+            columns:
+              - column:
+                  name: season_id
+              - column:
+                  name: value
+                  descending: true
+              - column:
+                  name: updated_at
+
+        # Первый сезон: 30 октября 2026, 17:00 МСК, ровно 4 недели.
+        # Должен совпадать с JumpSeasonCalendar.
+        - sql:
+            sql: |
+              insert into jump_season (id, season_number, starts_at, ends_at)
+              values (
+                gen_random_uuid(),
+                1,
+                timestamptz '2026-10-30 17:00:00+03',
+                timestamptz '2026-11-27 17:00:00+03'
+              );
+              insert into jump_season_score (season_id, player_id, value, updated_at)
+              select s.id, l.player_id, l.value, l.updated_at
+              from leaderboard l
+              join jump_season s on s.season_number = 1
+              where l.game = 'BULBA_JUMP'
+                and l.updated_at >= s.starts_at
+                and l.updated_at < s.ends_at;

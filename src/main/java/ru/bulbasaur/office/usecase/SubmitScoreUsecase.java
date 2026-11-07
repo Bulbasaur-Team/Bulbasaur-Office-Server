@@ -7,6 +7,7 @@ import ru.bulbasaur.office.domain.model.GameId;
 import ru.bulbasaur.office.usecase.dto.LeaderboardView;
 import ru.bulbasaur.office.usecase.port.out.LeaderboardRepositoryPort;
 
+import java.time.Instant;
 import java.util.UUID;
 
 /** Отправка результата (сохраняется лучший) и возврат обновлённого лидерборда. */
@@ -22,6 +23,7 @@ public class SubmitScoreUsecase {
     private final RecheckAchievementsUsecase recheckAchievements;
     private final EventLogService eventLog;
     private final CreditBulbaCoinsUsecase credit;
+    private final JumpSeasonUsecase jumpSeasons;
 
     public LeaderboardView execute(UUID playerId, String login, GameId game, long value, int limit) {
         Integer previousRank = leaderboard.valueOf(playerId, game)
@@ -29,6 +31,10 @@ public class SubmitScoreUsecase {
                 .orElse(null);
 
         leaderboard.submit(playerId, game, value, game.direction(), game.accumulate());
+        if (game == GameId.BULBA_JUMP) {
+            // Сезонный рекорд живёт отдельно: в зачёт идёт попытка внутри окна, даже если вечный рекорд выше.
+            jumpSeasons.record(playerId, value, Instant.now());
+        }
         if (game == GameId.BULBA_GUESS && value == 1) {
             credit.execute(playerId, GUESS_WIN_REWARD, BulbaCoinKind.GUESS_WIN,
                     "guess:win:" + UUID.randomUUID(),

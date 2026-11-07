@@ -5,8 +5,10 @@ import org.springframework.stereotype.Service;
 import ru.bulbasaur.office.domain.model.Achievement;
 import ru.bulbasaur.office.domain.model.GameId;
 import ru.bulbasaur.office.domain.model.Role;
+import ru.bulbasaur.office.usecase.dto.JumpSeasonPrizeLine;
 import ru.bulbasaur.office.usecase.port.out.EventLogPort;
 
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -96,6 +98,28 @@ public class EventLogService {
     public void questCompleted(String login, String questTitle) {
         log.append(INFO, "quest-service",
                 "Бульбазавр " + login + " завершил квест «" + questTitle + "»");
+    }
+
+    /** Призы за закрытый сезон Bulba Jump — одна строка на принтер в дата-центре. */
+    public void jumpSeasonRewarded(int seasonNumber, List<JumpSeasonPrizeLine> places) {
+        if (places.isEmpty()) {
+            log.append(INFO, "jump-season-service",
+                    "Сезон " + seasonNumber + " Bulba Jump завершился без результатов, Bulba Coins не начислялись");
+            return;
+        }
+        StringBuilder message = new StringBuilder();
+        message.append("Завершился сезон ").append(seasonNumber)
+                .append(" Bulba Jump. Начислены Bulba Coins: ");
+        for (int i = 0; i < places.size(); i++) {
+            if (i > 0) {
+                message.append(", ");
+            }
+            JumpSeasonPrizeLine place = places.get(i);
+            message.append(place.place()).append(" место — ").append(place.login())
+                    .append(" (").append(place.score()).append(" ").append(pointsWord(place.score()))
+                    .append(", ").append(place.coins()).append(" Bulba Coins)");
+        }
+        log.append(INFO, "jump-season-service", message.toString());
     }
 
     private static String gameTitle(GameId game) {
