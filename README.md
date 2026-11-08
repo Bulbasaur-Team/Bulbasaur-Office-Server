@@ -64,9 +64,4 @@ API поднимется на `http://localhost:8080`.
 
 ## Деплой на VPS
 
-Образ собирается `Dockerfile` (multi-stage, Gradle → JRE). Пуш в GHCR:
-```bash
-docker build -t ghcr.io/bulbasaur-team/bulba-backend:latest .
-docker push ghcr.io/bulbasaur-team/bulba-backend:latest
-```
-На сервере — compose из инфра-гайда (Caddy + этот образ + Postgres), Caddyfile проксирует `api.bulba-office.online` → `app:8080`.
+Файлы в `deploy/` сборка не использует. Их копируют на сервер в `/opt/bulba` и запускают руками. Образ собирается там же из `Dockerfile`, отдельный реестр образов не нужен. Caddy проксирует `api.bulba-office.online` на контейнер приложения. Подробности и причины каждого шага — в `deploy/otchet-pereezd.pdf`.

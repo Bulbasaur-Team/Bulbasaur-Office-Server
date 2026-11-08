@@ -1,0 +1,7 @@
+# Этот файл не читают Gradle, тесты и локальный docker compose.
+# Его копируют на VPS в /opt/bulba/Caddyfile и отдают контейнеру Caddy.
+# Caddy принимает HTTPS для API и передаёт запросы приложению.
+
+api.bulba-office.online {
+	reverse_proxy app:8080
+}

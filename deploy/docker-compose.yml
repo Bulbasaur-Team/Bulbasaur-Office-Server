@@ -1,0 +1,51 @@
+# Корневой docker-compose.yml — локальный стенд. Этот файл копируют на VPS
+# в /opt/bulba/docker-compose.yml рядом с .env, Caddyfile и скриптами.
+# Каталог ./server на VPS — это git clone репозитория, его создаёт deploy.sh.
+
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bulba
+      POSTGRES_USER: bulba
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  app:
+    build: ./server
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/bulba
+      SPRING_DATASOURCE_USERNAME: bulba
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      APP_JWT_SECRET: ${JWT_SECRET}
+      APP_JWT_TTL: P7D
+      APP_CORS_ORIGIN: https://bulbasaur-team.github.io
+      APP_WOTD_SECRET: ${WOTD_SECRET}
+      APP_WOTD_LAUNCH_DATE: "2026-07-07"
+    ports:
+      - "127.0.0.1:8080:8080"
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
