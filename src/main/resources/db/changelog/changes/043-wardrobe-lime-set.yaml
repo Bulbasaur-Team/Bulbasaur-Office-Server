@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 043-wardrobe-lime-set
+      author: bulba
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO wardrobe_items (code, category, name, price, sort_order, sellable) VALUES
+              ('top_hoodie_lime', 'TOP', 'Кислотно-зелёная толстовка', 4000, 105, true),
+              ('top_tshirt_lime', 'TOP', 'Кислотно-зелёная футболка', 2000, 119, true),
+              ('bottom_lime_shorts', 'BOTTOM', 'Кислотно-зелёные шорты', 1500, 102, true),
+              ('shoes_crocs_lime', 'SHOES', 'Кислотно-зелёные кроксы', 5000, 80, true),
+              ('hat_wdm_lime_cap', 'HAT', 'Кислотно-зелёная кепка WDM', 5000, 75, true)
+              ON CONFLICT DO NOTHING;

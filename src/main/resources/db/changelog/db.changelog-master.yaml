@@ -128,3 +128,9 @@ databaseChangeLog:
   - include:
       file: changes/042-jump-seasons.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/043-wardrobe-lime-set.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/044-wardrobe-top-hoodie-branded.yaml
+      relativeToChangelogFile: true
